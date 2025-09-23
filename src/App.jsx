@@ -214,16 +214,6 @@ function App() {
                 <p className="text-green-700">{feature.description}</p>
               </motion.div>
             ))}
-                {isTyping && (
-                  <div className="message-row from-bot">
-                    <div className="avatar bot"><Sprout className="w-5 h-5" /></div>
-                    <div className="bubble bot-bubble typing">
-                      <span className="typing-dot">•</span>
-                      <span className="typing-dot">•</span>
-                      <span className="typing-dot">•</span>
-                    </div>
-                  </div>
-                )}
           </div>
         </div>
       </section>
@@ -341,15 +331,16 @@ function App() {
                     )}
                   </motion.div>
                 ))}
-                {/* Typing indicator placeholder (when AI added, toggle visibility) */}
-                {/* <div className="message-row from-bot">
-                  <div className="avatar bot"><Sprout className="w-5 h-5" /></div>
-                  <div className="bubble bot-bubble typing">
-                    <span className="typing-dot">•</span>
-                    <span className="typing-dot">•</span>
-                    <span className="typing-dot">•</span>
+                {isTyping && (
+                  <div className="message-row from-bot">
+                    <div className="avatar bot"><Sprout className="w-5 h-5" /></div>
+                    <div className="bubble bot-bubble typing">
+                      <span className="typing-dot">•</span>
+                      <span className="typing-dot">•</span>
+                      <span className="typing-dot">•</span>
+                    </div>
                   </div>
-                </div> */}
+                )}
               </div>
 
               {/* Chat Input */}
