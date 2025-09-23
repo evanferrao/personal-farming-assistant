@@ -213,3 +213,225 @@ html {
 .typing-dot:nth-child(3) {
   animation-delay: 0.4s;
 }
+
+/* Modern Chat UI (ChatGPT-like) */
+.message-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.message-row.from-user {
+  justify-content: flex-end;
+}
+
+.message-row.from-bot {
+  justify-content: flex-start;
+}
+
+.avatar {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.avatar.bot {
+  background: var(--green-100);
+  color: var(--green-700);
+  border: 1px solid var(--green-200);
+}
+
+.avatar.user {
+  background: #e5f9ef;
+  color: var(--green-800);
+  border: 1px solid #c9f1da;
+}
+
+.bubble {
+  position: relative;
+  max-width: 72ch;
+  padding: 12px 16px;
+  border-radius: 16px;
+  box-shadow: 0 1px 1px rgba(0,0,0,0.02), 0 2px 4px rgba(0,0,0,0.06);
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.bubble:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+}
+
+.bot-bubble {
+  background: #f8fafc;
+  color: #0f172a;
+  border: 1px solid #e2e8f0;
+}
+
+.user-bubble {
+  background: linear-gradient(135deg, var(--green-600), var(--green-700));
+  color: white;
+  border: 1px solid rgba(255,255,255,0.15);
+}
+
+/* Typing bubble */
+.bubble.typing {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.typing-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: #9ca3af;
+  border-radius: 50%;
+}
+
+/* Input Area */
+.chat-input-area {
+  background: linear-gradient(180deg, rgba(255,255,255,0.8), rgba(255,255,255,1));
+  backdrop-filter: saturate(140%) blur(6px);
+  padding-top: 12px;
+  padding-bottom: 20px; /* extra bottom padding as requested */
+}
+
+.chat-input-wrap {
+  align-items: center;
+  padding-left: 12px;
+  padding-right: 12px;
+  gap: 14px; /* increase input-send spacing */
+}
+
+.chat-input {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+
+.chat-input:hover {
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+
+.send-btn {
+  box-shadow: 0 8px 16px rgba(22, 163, 74, 0.25);
+}
+
+.send-btn:hover {
+  box-shadow: 0 10px 20px rgba(22, 163, 74, 0.35);
+}
+
+/* Modal polish */
+.chat-messages {
+  background: linear-gradient(180deg, #ffffff 0%, #fcfffd 100%);
+  border-top: 1px solid #eef2f7;
+}
+
+/* ===== Chat polish based on feedback ===== */
+/* Add comfy padding so first bubble doesn't touch the header */
+.chat-messages {
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+
+/* Ensure modal corners are actually rounded on all edges */
+.chat-modal {
+  border-radius: 16px;
+  overflow: hidden; /* clip inner areas so the bottom looks curved */
+}
+
+/* Header compact divider and remove ugly focus border on close icon */
+.chat-header {
+  border-bottom: 1px solid rgba(255,255,255,0.25);
+}
+
+.icon-btn,
+.send-btn {
+  border: none;
+  outline: none;
+}
+
+.icon-btn:focus,
+.send-btn:focus { outline: none !important; }
+.icon-btn:focus-visible,
+.send-btn:focus-visible {
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(22,163,74,0.35);
+}
+
+/* Larger input and consistent send button size */
+.chat-input {
+  height: 56px;
+  padding: 0 16px;
+  font-size: 1rem;
+}
+
+.send-btn {
+  width: 56px;
+  height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+}
+
+.send-btn svg { width: 22px; height: 22px; }
+
+/* Improve vertical rhythm between messages */
+.message-row + .message-row { margin-top: 12px; }
+
+/* Chat Now CTA styles */
+.chat-launch-btn {
+  background: linear-gradient(135deg, var(--green-600), var(--green-700));
+  border: none;
+  outline: none;
+  box-shadow: 0 12px 24px rgba(22,163,74,0.25);
+  padding-top: 0.9rem; /* taller */
+  padding-bottom: 0.9rem;
+}
+
+.chat-launch-btn:hover {
+  filter: brightness(1.02);
+  box-shadow: 0 16px 30px rgba(22,163,74,0.35);
+}
+
+.chat-launch-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(34,197,94,0.35), 0 12px 24px rgba(22,163,74,0.25);
+}
+
+/* Hero CTA buttons */
+.cta-btn { border: none; outline: none; }
+.cta-btn:focus-visible { box-shadow: 0 0 0 3px rgba(22,163,74,0.35); }
+
+.primary-cta {
+  background: linear-gradient(135deg, var(--green-600), var(--green-700));
+  color: #fff;
+  box-shadow: 0 12px 24px rgba(22,163,74,0.25);
+}
+
+.primary-cta:hover {
+  filter: brightness(1.02);
+  box-shadow: 0 16px 30px rgba(22,163,74,0.35);
+}
+
+.secondary-cta {
+  background: #ecfdf5; /* soft emerald */
+  color: var(--green-800);
+  box-shadow: inset 0 0 0 0 transparent, 0 6px 14px rgba(16,185,129,0.15);
+}
+
+.secondary-cta:hover {
+  background: #d1fae5;
+  color: var(--green-900);
+  box-shadow: 0 10px 20px rgba(16,185,129,0.25);
+}
+

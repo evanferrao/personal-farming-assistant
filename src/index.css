@@ -112,6 +112,8 @@ a {
 .container { width: 100%; margin-left: auto; margin-right: auto; padding-left: 1rem; padding-right: 1rem; }
 .mx-auto { margin-left: auto; margin-right: auto; }
 .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+.p-6 { padding: 1.5rem; }
+.py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
 .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
 .flex { display: flex; }
 .justify-between { justify-content: space-between; }

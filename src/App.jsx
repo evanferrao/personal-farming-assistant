@@ -86,7 +86,7 @@ function App() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setIsChatOpen(true)}
-            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-full flex items-center space-x-2 transition-all duration-300 shadow-lg hover:shadow-xl"
+            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-full flex items-center space-x-2 transition-all duration-300 shadow-lg hover:shadow-xl chat-launch-btn"
           >
             <MessageCircle className="w-5 h-5" />
             <span>Chat Now</span>
@@ -126,14 +126,14 @@ function App() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setIsChatOpen(true)}
-              className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-full text-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl"
+              className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-full text-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl cta-btn primary-cta"
             >
               Start Farming Journey
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="border-2 border-green-600 text-green-600 hover:bg-green-600 hover:text-white px-8 py-4 rounded-full text-lg font-semibold transition-all duration-300"
+              className="text-green-700 px-8 py-4 rounded-full text-lg font-semibold transition-all duration-300 cta-btn secondary-cta"
             >
               Learn More
             </motion.button>
@@ -261,10 +261,10 @@ function App() {
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.5, opacity: 0 }}
-              className="bg-white rounded-2xl w-full max-w-2xl h-[600px] flex flex-col shadow-2xl"
+              className="bg-white rounded-2xl w-full max-w-2xl h-[600px] flex flex-col shadow-2xl chat-modal"
             >
               {/* Chat Header */}
-              <div className="bg-green-600 text-white p-6 rounded-t-2xl flex justify-between items-center">
+              <div className="bg-green-600 text-white p-6 rounded-t-2xl flex justify-between items-center chat-header">
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
                     <Sprout className="w-6 h-6" />
@@ -276,50 +276,65 @@ function App() {
                 </div>
                 <button
                   onClick={() => setIsChatOpen(false)}
-                  className="hover:bg-green-500 p-2 rounded-full transition-colors"
+                  className="hover:bg-green-500 p-2 rounded-full transition-colors icon-btn"
                 >
                   <X className="w-6 h-6" />
                 </button>
               </div>
 
               {/* Chat Messages */}
-              <div className="flex-1 p-6 overflow-y-auto space-y-4">
+              <div className="flex-1 p-6 overflow-y-auto space-y-4 chat-messages">
                 {messages.map((message) => (
                   <motion.div
                     key={message.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                    className={`message-row ${message.sender === 'user' ? 'from-user' : 'from-bot'}`}
                   >
+                    {message.sender !== 'user' && (
+                      <div className="avatar bot">
+                        <Sprout className="w-5 h-5" />
+                      </div>
+                    )}
                     <div
-                      className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
-                        message.sender === 'user'
-                          ? 'bg-green-600 text-white'
-                          : 'bg-gray-100 text-gray-800'
+                      className={`bubble ${
+                        message.sender === 'user' ? 'user-bubble' : 'bot-bubble'
                       }`}
                     >
                       {message.text}
                     </div>
+                    {message.sender === 'user' && (
+                      <div className="avatar user">🧑‍🌾</div>
+                    )}
                   </motion.div>
                 ))}
+                {/* Typing indicator placeholder (when AI added, toggle visibility) */}
+                {/* <div className="message-row from-bot">
+                  <div className="avatar bot"><Sprout className="w-5 h-5" /></div>
+                  <div className="bubble bot-bubble typing">
+                    <span className="typing-dot">•</span>
+                    <span className="typing-dot">•</span>
+                    <span className="typing-dot">•</span>
+                  </div>
+                </div> */}
               </div>
 
               {/* Chat Input */}
-              <div className="p-6 border-t border-gray-200">
-                <div className="flex space-x-4">
+              <div className="p-6 border-t border-gray-200 chat-input-area">
+                <div className="flex space-x-4 chat-input-wrap">
                   <input
                     type="text"
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                     placeholder="എങ്ങനെ സഹായിക്കാം?"
-                    className="flex-1 border border-gray-300 rounded-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="flex-1 border border-gray-300 rounded-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 chat-input"
                   />
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={handleSendMessage}
-                    className="bg-green-600 hover:bg-green-700 text-white p-3 rounded-full transition-colors"
+                    className="bg-green-600 hover:bg-green-700 text-white p-3 rounded-full transition-colors send-btn"
                   >
                     <Send className="w-6 h-6" />
                   </motion.button>
