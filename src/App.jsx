@@ -86,6 +86,15 @@ function App() {
   const [messages, setMessages] = useState(() => defaultMessages(lang))
   const [inputMessage, setInputMessage] = useState("")
     const [isTyping, setIsTyping] = useState(false)
+  // Theme (dark | light), default dark
+  const getInitialTheme = () => {
+    try {
+      const saved = localStorage.getItem('pfa_theme')
+      if (saved === 'light' || saved === 'dark') return saved
+    } catch {}
+    return 'dark'
+  }
+  const [theme, setTheme] = useState(getInitialTheme())
 
     // Rehydrate from localStorage on mount
     useEffect(() => {
@@ -102,6 +111,12 @@ function App() {
     useEffect(() => {
       try { localStorage.setItem('pfa_lang', lang) } catch {}
     }, [lang])
+
+    // Apply theme to document and persist
+    useEffect(() => {
+      try { localStorage.setItem('pfa_theme', theme) } catch {}
+      document.documentElement.setAttribute('data-theme', theme)
+    }, [theme])
 
     // Persist on change
     useEffect(() => {
@@ -142,12 +157,12 @@ function App() {
   // impacts moved into TEXTS
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100">
+  <div className={`min-h-screen bg-gradient-to-br ${theme === 'dark' ? 'from-gray-900 to-gray-800' : 'from-green-50 to-emerald-100'}`}>
       {/* Navigation */}
       <motion.nav 
         initial={{ y: -100 }}
         animate={{ y: 0 }}
-        className="bg-white/90 backdrop-blur-sm shadow-lg sticky top-0 z-50"
+  className={`${theme === 'dark' ? 'bg-dark-nav' : 'bg-white/90'} backdrop-blur-sm shadow-lg sticky top-0 z-50`}
       >
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
           <motion.div 
@@ -169,6 +184,20 @@ function App() {
                 className={`lang-btn ${lang === 'en' ? 'active' : ''}`}
                 aria-pressed={lang === 'en'}
               >EN</button>
+            </div>
+            <div className="lang-toggle" aria-label="Theme toggle">
+              <button
+                onClick={() => setTheme('dark')}
+                className={`lang-btn ${theme === 'dark' ? 'active' : ''}`}
+                aria-pressed={theme === 'dark'}
+                title="Dark"
+              >🌙</button>
+              <button
+                onClick={() => setTheme('light')}
+                className={`lang-btn ${theme === 'light' ? 'active' : ''}`}
+                aria-pressed={theme === 'light'}
+                title="Light"
+              >☀️</button>
             </div>
             <motion.button
               whileHover={{ scale: 1.05 }}
