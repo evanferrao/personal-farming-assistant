@@ -331,8 +331,8 @@ html {
 
 /* Modal polish */
 .chat-messages {
-  background: linear-gradient(180deg, #ffffff 0%, #fcfffd 100%);
-  border-top: 1px solid #eef2f7;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border-primary);
 }
 
 /* ===== Chat polish based on feedback ===== */

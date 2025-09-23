@@ -1,12 +1,13 @@
 import { useEffect, useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { MessageCircle, X, Send, Sprout, Users, TrendingUp, Brain, Shield, Clock, MapPin, Droplets, Bug, Languages } from 'lucide-react'
+import { MessageCircle, X, Send, Sprout, Users, TrendingUp, Brain, Shield, Clock, MapPin, Droplets, Bug, Languages, Moon, Sun } from 'lucide-react'
 import './App.css'
 import { sendChat } from './lib/chat'
 
 function App() {
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [language, setLanguage] = useState('ml') // 'ml' for Malayalam (default), 'en' for English
+  const [isDarkMode, setIsDarkMode] = useState(true) // Default to dark mode
   
   // Language-specific content - using useMemo to prevent infinite re-renders
   const content = useMemo(() => ({
@@ -57,6 +58,25 @@ function App() {
   const [inputMessage, setInputMessage] = useState("")
     const [isTyping, setIsTyping] = useState(false)
 
+    // Dark mode effect - apply theme to document and persist preference
+    useEffect(() => {
+      // Load dark mode preference from localStorage, default to true (dark mode)
+      const savedDarkMode = localStorage.getItem('pfa_dark_mode')
+      const prefersDark = savedDarkMode !== null ? savedDarkMode === 'true' : true
+      setIsDarkMode(prefersDark)
+    }, [])
+
+    useEffect(() => {
+      // Apply theme to document
+      document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light')
+      // Persist preference
+      localStorage.setItem('pfa_dark_mode', isDarkMode.toString())
+    }, [isDarkMode])
+
+    const toggleDarkMode = () => {
+      setIsDarkMode(prev => !prev)
+    }
+
     // Rehydrate from localStorage on mount
     useEffect(() => {
       try {
@@ -81,7 +101,7 @@ function App() {
         }
         return prev
       })
-    }, [language]) // Remove content from dependencies since it's memoized
+    }, [language, content]) // Add content to dependencies
 
     // Persist on change
     useEffect(() => {
@@ -175,12 +195,12 @@ function App() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100">
+    <div className="min-h-screen bg-themed-hero">
       {/* Navigation */}
       <motion.nav 
         initial={{ y: -100 }}
         animate={{ y: 0 }}
-        className="bg-white/90 backdrop-blur-sm shadow-lg sticky top-0 z-50"
+        className="bg-themed-secondary backdrop-blur-sm shadow-lg sticky top-0 z-50"
       >
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
           <motion.div 
@@ -188,16 +208,27 @@ function App() {
             className="flex items-center space-x-3"
           >
             <Sprout className="w-8 h-8 text-green-600" />
-            <span className="text-2xl font-bold text-green-800">{content[language].appName}</span>
+            <span className="text-2xl font-bold text-themed-tertiary">{content[language].appName}</span>
           </motion.div>
           
           <div className="flex items-center space-x-4">
+            {/* Dark Mode Toggle */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={toggleDarkMode}
+              className="bg-themed-card hover:bg-themed-tertiary text-themed-primary p-3 rounded-full transition-all duration-300 shadow-md"
+              title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+              {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </motion.button>
+
             {/* Language Toggle */}
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setLanguage(prev => prev === 'ml' ? 'en' : 'ml')}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-full flex items-center space-x-2 transition-all duration-300"
+              className="bg-themed-card hover:bg-themed-tertiary text-themed-primary px-3 py-2 rounded-full flex items-center space-x-2 transition-all duration-300"
               title="Switch Language"
             >
               <Languages className="w-4 h-4" />
@@ -226,17 +257,17 @@ function App() {
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="text-5xl md:text-7xl font-bold text-green-800 mb-6 leading-tight"
+            className="text-5xl md:text-7xl font-bold text-themed-tertiary mb-6 leading-tight"
           >
             {content[language].heroTitle}<br />
-            <span className="text-green-600">{content[language].heroSubtitle}</span>
+            <span className="text-themed-accent">{content[language].heroSubtitle}</span>
           </motion.h1>
           
           <motion.p 
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="text-xl md:text-2xl text-green-700 mb-8 max-w-3xl mx-auto"
+            className="text-xl md:text-2xl text-themed-secondary mb-8 max-w-3xl mx-auto"
           >
             {content[language].heroDescription}
           </motion.p>
@@ -258,7 +289,7 @@ function App() {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="text-green-700 px-8 py-4 rounded-full text-lg font-semibold transition-all duration-300 cta-btn secondary-cta"
+              className="text-themed-secondary px-8 py-4 rounded-full text-lg font-semibold transition-all duration-300 cta-btn secondary-cta border-2 border-green-600 hover:bg-green-600 hover:text-white"
             >
               {content[language].learnMore}
             </motion.button>
@@ -267,7 +298,7 @@ function App() {
       </section>
 
       {/* Problem Section */}
-      <section className="py-16 px-6 bg-white/50">
+      <section className="py-16 px-6 bg-themed-tertiary">
         <div className="container mx-auto">
           <motion.div 
             initial={{ opacity: 0, y: 50 }}
@@ -275,8 +306,8 @@ function App() {
             transition={{ duration: 0.8 }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl md:text-5xl font-bold text-green-800 mb-6">{content[language].challengeTitle}</h2>
-            <p className="text-xl text-green-700 max-w-4xl mx-auto">
+            <h2 className="text-4xl md:text-5xl font-bold text-themed-tertiary mb-6">{content[language].challengeTitle}</h2>
+            <p className="text-xl text-themed-secondary max-w-4xl mx-auto">
               {content[language].challengeDescription}
             </p>
           </motion.div>
@@ -292,8 +323,8 @@ function App() {
             transition={{ duration: 0.8 }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl md:text-5xl font-bold text-green-800 mb-6">{content[language].featuresTitle}</h2>
-            <p className="text-xl text-green-700">
+            <h2 className="text-4xl md:text-5xl font-bold text-themed-tertiary mb-6">{content[language].featuresTitle}</h2>
+            <p className="text-xl text-themed-secondary">
               {content[language].featuresDescription}
             </p>
           </motion.div>
@@ -306,13 +337,13 @@ function App() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: index * 0.1 }}
                 whileHover={{ y: -10, scale: 1.02 }}
-                className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-green-100"
+                className="bg-themed-card rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-themed-primary"
               >
                 <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mb-6">
                   <feature.icon className="w-8 h-8 text-green-600" />
                 </div>
-                <h3 className="text-xl font-bold text-green-800 mb-4">{feature.title}</h3>
-                <p className="text-green-700">{feature.description}</p>
+                <h3 className="text-xl font-bold text-themed-tertiary mb-4">{feature.title}</h3>
+                <p className="text-themed-secondary">{feature.description}</p>
               </motion.div>
             ))}
                 {isTyping && (
@@ -395,7 +426,7 @@ function App() {
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.5, opacity: 0 }}
-              className="bg-white rounded-2xl w-full max-w-2xl h-[600px] flex flex-col shadow-2xl chat-modal"
+              className="bg-themed-card rounded-2xl w-full max-w-2xl h-[600px] flex flex-col shadow-2xl chat-modal"
             >
               {/* Chat Header */}
               <div className="bg-green-600 text-white p-6 rounded-t-2xl flex justify-between items-center chat-header">
@@ -454,7 +485,7 @@ function App() {
               </div>
 
               {/* Chat Input */}
-              <div className="p-6 border-t border-gray-200 chat-input-area">
+              <div className="p-6 border-t border-themed-primary chat-input-area">
                 <div className="flex space-x-4 chat-input-wrap">
                   <input
                     type="text"
@@ -462,7 +493,7 @@ function App() {
                     onChange={(e) => setInputMessage(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                     placeholder={content[language].chatPlaceholder}
-                    className="flex-1 border border-gray-300 rounded-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 chat-input"
+                    className="flex-1 border border-themed-secondary rounded-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 chat-input bg-themed-card text-themed-primary"
                   />
                   <motion.button
                     whileHover={{ scale: 1.05 }}
