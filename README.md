@@ -34,6 +34,38 @@ This project is built with:
 
 3. Open your browser and navigate to the displayed URL (usually http://localhost:5173)
 
+### Local AI via backend
+
+This repo includes two backend options. For local development, run the Node server:
+
+1) Create `server/.env` from `server/.env.example` and set `API_KEY` and `MODEL`.
+2) In one terminal:
+    - `cd server && npm install && npm run dev`
+3) In another terminal:
+    - `npm run dev`
+
+Vite proxies `/api` to `http://localhost:8787` during dev.
+
+### Production AI via Cloudflare Worker
+
+You can deploy the stateless chat endpoint as a Cloudflare Worker so your API key and system prompt stay off the client and out of this repo.
+
+- Worker path: `worker/`
+- Configure with Wrangler:
+   - `cd worker`
+   - `npm i -g wrangler` (if not installed)
+   - `wrangler login`
+   - Set secrets and vars:
+      - `wrangler secret put API_KEY`
+      - `wrangler secret put SYSTEM_PROMPT`
+      - `wrangler secret put MODEL`
+   - `wrangler deploy`
+
+The deploy command will output a Worker URL like `https://farmerportal-api.your-account.workers.dev`.
+
+In GitHub Pages build, set `VITE_API_BASE` to that Worker URL so the frontend calls it at runtime.
+
+
 ## Available Scripts
 
 - `npm run dev` - Start development server

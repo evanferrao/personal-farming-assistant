@@ -1,0 +1,14 @@
+name = "farmerportal-api"
+main = "src/index.js"
+compatibility_date = "2025-09-23"
+
+[vars]
+LOCALE = "ml-IN"
+
+[[durable_objects.bindings]]
+name = "SESSION_MEMORY"
+class_name = "SessionMemory"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["SessionMemory"]

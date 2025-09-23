@@ -1,28 +1,51 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MessageCircle, X, Send, Sprout, Users, TrendingUp, Brain, Shield, Clock, MapPin, Droplets, Bug } from 'lucide-react'
 import './App.css'
+import { sendChat } from './lib/chat'
 
 function App() {
   const [isChatOpen, setIsChatOpen] = useState(false)
-  const [messages, setMessages] = useState([
-    { id: 1, text: "നമസ്കാരം! ഞാൻ കൃഷി സഖി, നിങ്ങളുടെ വ്യക്തിഗത കാർഷിക സഹായി. എങ്ങനെ സഹായിക്കാം?", sender: "bot" }
-  ])
+  const DEFAULT_GREETING = { id: 1, text: "നമസ്കാരം! ഞാൻ കൃഷി സഖി, നിങ്ങളുടെ വ്യക്തിഗത കാർഷിക സഹായി. എങ്ങനെ സഹായിക്കാം?", sender: "bot" }
+  const [messages, setMessages] = useState([DEFAULT_GREETING])
   const [inputMessage, setInputMessage] = useState("")
+    const [isTyping, setIsTyping] = useState(false)
 
-  const handleSendMessage = () => {
-    if (inputMessage.trim()) {
-      setMessages([...messages, { id: Date.now(), text: inputMessage, sender: "user" }])
-      setInputMessage("")
-      
-      // Simulate bot response
-      setTimeout(() => {
-        setMessages(prev => [...prev, { 
-          id: Date.now() + 1, 
-          text: "നിങ്ങളുടെ ചോദ്യം മനസ്സിലായി. AI സിസ്റ്റം ഇപ്പോൾ വികസിപ്പിച്ചുകൊണ്ടിരിക്കുന്നു. ദയവായി കാത്തിരിക്കുക.", 
-          sender: "bot" 
-        }])
-      }, 1000)
+    // Rehydrate from localStorage on mount
+    useEffect(() => {
+      try {
+        const saved = localStorage.getItem('pfa_chat_history')
+        if (saved) {
+          const parsed = JSON.parse(saved)
+          if (Array.isArray(parsed) && parsed.length > 0) setMessages(parsed)
+        }
+      } catch {}
+    }, [])
+
+    // Persist on change
+    useEffect(() => {
+      try { localStorage.setItem('pfa_chat_history', JSON.stringify(messages)) } catch {}
+    }, [messages])
+
+  const handleSendMessage = async () => {
+    const text = inputMessage.trim()
+    if (!text) return
+
+    const userMsg = { id: Date.now(), text, sender: 'user' }
+    setMessages(prev => [...prev, userMsg])
+    setInputMessage('')
+    setIsTyping(true)
+
+    try {
+      // Limit history to last 12 turns to keep prompt small
+      const history = [...messages, userMsg]
+      const trimmed = history.slice(-24) // messages are single turns, 24 ~ 12 exchanges
+      const { reply } = await sendChat(trimmed, { locale: 'ml-IN' })
+      setMessages(prev => [...prev, { id: Date.now() + 1, text: reply, sender: 'bot' }])
+    } catch (e) {
+      setMessages(prev => [...prev, { id: Date.now() + 2, text: 'ക്ഷമിക്കണം, സർവറിൽ ഒരു പ്രശ്നം നേരിട്ടു. പിന്നീട് വീണ്ടും ശ്രമിക്കാം.', sender: 'bot' }])
+    } finally {
+      setIsTyping(false)
     }
   }
 
@@ -191,6 +214,16 @@ function App() {
                 <p className="text-green-700">{feature.description}</p>
               </motion.div>
             ))}
+                {isTyping && (
+                  <div className="message-row from-bot">
+                    <div className="avatar bot"><Sprout className="w-5 h-5" /></div>
+                    <div className="bubble bot-bubble typing">
+                      <span className="typing-dot">•</span>
+                      <span className="typing-dot">•</span>
+                      <span className="typing-dot">•</span>
+                    </div>
+                  </div>
+                )}
           </div>
         </div>
       </section>
