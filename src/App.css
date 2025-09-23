@@ -398,6 +398,49 @@ html {
   padding-bottom: 0.9rem;
 }
 
+/* Language toggle (segmented control) */
+.lang-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 9999px;
+  padding: 4px;
+  box-shadow: 0 6px 14px rgba(2, 132, 99, 0.12);
+}
+
+.lang-btn {
+  position: relative;
+  appearance: none;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  border-radius: 9999px;
+  padding: 8px 14px;
+  min-width: 48px;
+  height: 36px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--green-700);
+  background: transparent;
+  transition: all 0.2s ease;
+}
+
+.lang-btn:hover {
+  background: #f0fdf4; /* very light green */
+}
+
+.lang-btn.active {
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--green-600), var(--green-700));
+  box-shadow: 0 6px 16px rgba(22, 163, 74, 0.35);
+}
+
+.lang-btn:focus-visible {
+  box-shadow: 0 0 0 3px rgba(22,163,74,0.35);
+}
+
 .chat-launch-btn:hover {
   filter: brightness(1.02);
   box-shadow: 0 16px 30px rgba(22,163,74,0.35);
