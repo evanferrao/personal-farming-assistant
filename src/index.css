@@ -273,8 +273,13 @@ a {
     padding-left: 1rem;
     padding-right: 1rem;
   }
-}
-
-@media (min-width: 380px) {
-  .xs\:flex { display: flex; }
+  
+  .chat-launch-btn span {
+    display: none;
+  }
+  
+  .chat-launch-btn {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
 }

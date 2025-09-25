@@ -203,10 +203,10 @@ function App() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setIsChatOpen(true)}
-              className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-full hidden sm:flex items-center space-x-2 transition-all duration-300 shadow-lg hover:shadow-xl chat-launch-btn"
+              className="bg-green-600 hover:bg-green-700 text-white px-2 sm:px-6 py-3 rounded-full flex items-center space-x-1 sm:space-x-2 transition-all duration-300 shadow-lg hover:shadow-xl chat-launch-btn"
             >
               <MessageCircle className="w-5 h-5" />
-              <span>{TEXTS[lang].chatNow}</span>
+              <span className="hidden sm:inline">{TEXTS[lang].chatNow}</span>
             </motion.button>
           </div>
         </div>
