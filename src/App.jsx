@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MessageCircle, X, Send, Sprout, Users, TrendingUp, Brain, Shield, Clock, MapPin, Droplets, Bug, Maximize2, Minimize2 } from 'lucide-react'
 import './App.css'
-import { sendChat } from './lib/chat'
+import { sendChat, sendLocalChat } from './lib/chat'
 import { fetchWeatherForClient } from './lib/weather'
 
 function App() {
@@ -25,6 +25,10 @@ function App() {
       heroSubtitle: 'Kerala കർഷകർക്കായി വ്യക്തിഗതമാക്കിയ, സമയോചിതമായ കാർഷിക ഉപദേശം നൽകുന്ന ഡിജിറ്റൽ സുഹൃത്ത്',
       ctaPrimary: 'Start Farming Journey',
       ctaSecondary: 'Learn More',
+  localChat: 'ലോക്കൽ ചാറ്റ്',
+  assistantTag: 'നിങ്ങളുടെ AI കാർഷിക സഹായി',
+  cloudModeLabel: 'ക്ലൗഡ് മോഡൽ (Online)',
+  localModeLabel: 'ലോക്കൽ മോഡൽ (ഓഫ്‌ലൈൻ)',
       challengeTitle: 'The Challenge',
       challengePara: 'Kerala-ലെ ചെറുകിട കർഷകർക്ക് പലപ്പോഴും വ്യക്തിഗതമാക്കിയ, സമയോചിതമായ കാർഷിക ഉപദേശങ്ങളിലേക്കുള്ള പ്രവേശനം ഇല്ല. പൊതുവായ ഉപദേശങ്ങൾ പ്രാദേശിക വിള തിരഞ്ഞെടുപ്പുകൾ, കാലാവസ്ഥ, മണ്ണിന്റെ അവസ്ഥ അല്ലെങ്കിൽ കൃഷി രീതികൾ എന്നിവ കണക്കിലെടുക്കുന്നതിൽ പരാജയപ്പെടുന്നു.',
       featuresTitle: 'Core Features',
@@ -71,6 +75,10 @@ function App() {
       heroSubtitle: 'A digital companion delivering personalized, timely farm advice for Kerala farmers',
       ctaPrimary: 'Start Farming Journey',
       ctaSecondary: 'Learn More',
+  localChat: 'Local Chat',
+  assistantTag: 'Your AI Farming Assistant',
+  cloudModeLabel: 'Cloud model (Online)',
+  localModeLabel: 'Local model (Offline)',
       challengeTitle: 'The Challenge',
       challengePara: 'Smallholder farmers in Kerala often lack access to timely, personalized advisory. Generic guidance may miss local crop choices, weather, soil conditions, and farming practices.',
       featuresTitle: 'Core Features',
@@ -114,8 +122,21 @@ function App() {
   }
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [isFullScreen, setIsFullScreen] = useState(false)
+  const [chatMode, setChatMode] = useState('cloud')
   const defaultMessages = (lng) => ([{ id: 1, text: TEXTS[lng].greeting, sender: 'bot' }])
-  const [messages, setMessages] = useState(() => defaultMessages(lang))
+  const getHistoryKey = (mode) => (mode === 'local' ? 'pfa_chat_history_local' : 'pfa_chat_history')
+  const loadHistory = (mode, lng = lang) => {
+    try {
+      if (typeof window === 'undefined') return defaultMessages(lng)
+      const stored = localStorage.getItem(getHistoryKey(mode))
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      }
+    } catch {}
+    return defaultMessages(lng)
+  }
+  const [messages, setMessages] = useState(() => loadHistory('cloud'))
   const [inputMessage, setInputMessage] = useState("")
     const [isTyping, setIsTyping] = useState(false)
   const [weatherInfo, setWeatherInfo] = useState(null)
@@ -132,17 +153,6 @@ function App() {
   }
   const [theme, setTheme] = useState(getInitialTheme())
 
-    // Rehydrate from localStorage on mount
-    useEffect(() => {
-      try {
-        const saved = localStorage.getItem('pfa_chat_history')
-        if (saved) {
-          const parsed = JSON.parse(saved)
-          if (Array.isArray(parsed) && parsed.length > 0) setMessages(parsed)
-        }
-      } catch {}
-    }, [])
-
     // Persist language and update default greeting only for a fresh session
     useEffect(() => {
       try { localStorage.setItem('pfa_lang', lang) } catch {}
@@ -156,8 +166,8 @@ function App() {
 
     // Persist on change
     useEffect(() => {
-      try { localStorage.setItem('pfa_chat_history', JSON.stringify(messages)) } catch {}
-    }, [messages])
+      try { localStorage.setItem(getHistoryKey(chatMode), JSON.stringify(messages)) } catch {}
+    }, [messages, chatMode])
 
     // Lock body scroll when chat is open
     useEffect(() => {
@@ -200,6 +210,14 @@ function App() {
       }
     }, [locale])
 
+  const openChat = (mode = 'cloud') => {
+    setChatMode(mode)
+    setMessages(loadHistory(mode))
+    setInputMessage('')
+    setIsTyping(false)
+    setIsChatOpen(true)
+  }
+
   const handleSendMessage = async () => {
     const text = inputMessage.trim()
     if (!text) return
@@ -213,7 +231,8 @@ function App() {
       // Limit history to last 12 turns to keep prompt small
       const history = [...messages, userMsg]
       const trimmed = history.slice(-24) // messages are single turns, 24 ~ 12 exchanges
-      const { reply } = await sendChat(trimmed, { locale })
+      const sendFn = chatMode === 'local' ? sendLocalChat : sendChat
+      const { reply } = await sendFn(trimmed, { locale })
       setMessages(prev => [...prev, { id: Date.now() + 1, text: reply, sender: 'bot' }])
     } catch (e) {
       setMessages(prev => [...prev, { id: Date.now() + 2, text: TEXTS[lang].error, sender: 'bot' }])
@@ -271,6 +290,10 @@ function App() {
 
   // impacts moved into TEXTS
 
+  const chatModeLabel = chatMode === 'local'
+    ? TEXTS[lang].localModeLabel
+    : TEXTS[lang].cloudModeLabel
+
   return (
   <div className={`min-h-screen bg-gradient-to-br ${theme === 'dark' ? 'from-gray-900 to-gray-800' : 'from-green-50 to-emerald-100'}`}>
       {/* Navigation */}
@@ -317,7 +340,7 @@ function App() {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => setIsChatOpen(true)}
+              onClick={() => openChat('cloud')}
               className="bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-full flex items-center space-x-2 transition-all duration-300 shadow-lg hover:shadow-xl chat-launch-btn"
             >
               <MessageCircle className="w-5 h-5" />
@@ -358,7 +381,7 @@ function App() {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => setIsChatOpen(true)}
+              onClick={() => openChat('cloud')}
               className="bg-green-600 hover:bg-green-700 text-white px-7 py-4 rounded-full text-base md:text-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl cta-btn primary-cta"
             >
               {TEXTS[lang].ctaPrimary}
@@ -369,6 +392,14 @@ function App() {
               className="text-green-700 px-7 py-4 rounded-full text-base md:text-lg font-semibold transition-all duration-300 cta-btn secondary-cta"
             >
               {TEXTS[lang].ctaSecondary}
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => openChat('local')}
+              className="text-green-700 border border-green-500 px-7 py-4 rounded-full text-base md:text-lg font-semibold transition-all duration-300 cta-btn local-cta"
+            >
+              {TEXTS[lang].localChat}
             </motion.button>
           </motion.div>
         </div>
@@ -616,8 +647,11 @@ function App() {
                     <Sprout className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="font-bold">കൃഷി സഖി</h3>
-                    <p className="text-green-100 text-sm">Your AI Farming Assistant</p>
+                    <h3 className="font-bold">{TEXTS[lang].brand}</h3>
+                    <p className="text-green-100 text-sm">
+                      {TEXTS[lang].assistantTag}
+                      <span className="block text-green-100/80 text-xs mt-1">{chatModeLabel}</span>
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">

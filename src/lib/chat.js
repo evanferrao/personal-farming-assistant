@@ -14,8 +14,8 @@ function getSessionId() {
   }
 }
 
-export async function sendChat(messages, { locale = 'ml-IN' } = {}) {
-  const resp = await fetch(`${API_BASE}/api/chat`, {
+export async function sendChat(messages, { locale = 'ml-IN', endpoint = '/api/chat' } = {}) {
+  const resp = await fetch(`${API_BASE}${endpoint}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ messages, locale, sessionId: getSessionId() })
@@ -25,4 +25,8 @@ export async function sendChat(messages, { locale = 'ml-IN' } = {}) {
     throw new Error(err.error || 'Chat request failed');
   }
   return resp.json();
+}
+
+export function sendLocalChat(messages, options = {}) {
+  return sendChat(messages, { ...options, endpoint: '/api/localchat' });
 }

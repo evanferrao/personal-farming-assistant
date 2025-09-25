@@ -2,6 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { AutoTokenizer, AutoModelForCausalLM } from '@xenova/transformers'; // <-- transformers.js
+import fetch from "node-fetch"; // make sure to npm install node-fetch
+
 
 dotenv.config();
 
@@ -26,6 +29,7 @@ app.use(express.json());
 
 const SYSTEM_PROMPT = process.env.SYSTEM_PROMPT || '';
 
+/* ---------------- Existing Online API chat ---------------- */
 app.post('/api/chat', async (req, res) => {
   try {
     const { messages, locale = 'ml-IN' } = req.body || {};
@@ -35,15 +39,14 @@ app.post('/api/chat', async (req, res) => {
     if (!API_KEY) return res.status(500).json({ error: 'Server not configured: API_KEY missing' });
     if (!MODEL) return res.status(500).json({ error: 'Server not configured: MODEL missing' });
 
-  const genAI = new GoogleGenerativeAI(API_KEY);
-  const model = genAI.getGenerativeModel({ model: MODEL });
+    const genAI = new GoogleGenerativeAI(API_KEY);
+    const model = genAI.getGenerativeModel({ model: MODEL });
 
-    // Convert messages to a single prompt with system instruction
     const userTranscript = messages
       .map(m => `${m.sender === 'user' ? 'User' : 'Assistant'}: ${m.text}`)
       .join('\n');
 
-  const prompt = `${SYSTEM_PROMPT}\n\nLocale: ${locale}\n\nConversation so far:\n${userTranscript}\n\nAssistant:`.trim();
+    const prompt = `${SYSTEM_PROMPT}\n\nLocale: ${locale}\n\nConversation so far:\n${userTranscript}\n\nAssistant:`.trim();
 
     const result = await model.generateContent(prompt);
     const text = result.response.text();
@@ -55,6 +58,31 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
+/* ---------------- New Local Model chat ---------------- */
+
+
+app.post('/api/localchat', async (req, res) => {
+  try {
+    const response = await fetch('http://localhost:5005/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req.body),
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      return res.status(response.status).json({ error: err });
+    }
+
+    const data = await response.json();
+    return res.json({ reply: data.reply });
+  } catch (err) {
+    console.error('Local chat proxy error:', err);
+    return res.status(500).json({ error: 'Failed to generate local response' });
+  }
+});
+
+/* ---------------- Weather endpoint ---------------- */
 app.get('/api/weather', async (req, res) => {
   try {
     if (!WEATHER_API_KEY) {
@@ -62,7 +90,6 @@ app.get('/api/weather', async (req, res) => {
     }
 
     const requestedIp = typeof req.query.ip === 'string' ? req.query.ip.trim() : Array.isArray(req.query.ip) ? req.query.ip[0]?.trim() : '';
-
     const fallbackIp = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').split(',')[0].trim();
     const queryTarget = requestedIp || fallbackIp || 'auto:ip';
 
@@ -90,21 +117,23 @@ app.get('/api/weather', async (req, res) => {
   }
 });
 
+/* ---------------- Misc endpoints ---------------- */
 app.get('/api/ip', (req, res) => {
   const forwarded = typeof req.headers['x-forwarded-for'] === 'string'
     ? req.headers['x-forwarded-for']
     : Array.isArray(req.headers['x-forwarded-for'])
       ? req.headers['x-forwarded-for'][0]
-      : ''
-  const headerIp = forwarded.split(',')[0].trim()
-  const socketIp = (req.socket?.remoteAddress || '').split(',')[0].trim()
-
-  const ip = headerIp || socketIp || null
-  return res.json({ ip })
-})
+      : '';
+  const headerIp = forwarded.split(',')[0].trim();
+  const socketIp = (req.socket?.remoteAddress || '').split(',')[0].trim();
+  const ip = headerIp || socketIp || null;
+  return res.json({ ip });
+});
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
-app.listen(PORT, () => {
+/* ---------------- Start server ---------------- */
+app.listen(PORT, async () => {
   console.log(`Chat backend listening on http://localhost:${PORT}`);
 });
+
