@@ -274,3 +274,7 @@ a {
     padding-right: 1rem;
   }
 }
+
+@media (min-width: 380px) {
+  .xs\:flex { display: flex; }
+}
