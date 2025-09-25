@@ -4,6 +4,7 @@ import { MessageCircle, X, Send, Sprout, Users, TrendingUp, Brain, Shield, Clock
 import './App.css'
 import { sendChat, sendLocalChat } from './lib/chat'
 import { fetchWeatherForClient } from './lib/weather'
+import FarmerInfoForm from './FarmerInfoForm'
 
 function App() {
   // Language selection (ml | en)
@@ -23,6 +24,7 @@ function App() {
       brand: 'കൃഷി സഖി',
       chatNow: 'Chat Now',
       heroSubtitle: 'Kerala കർഷകർക്കായി വ്യക്തിഗതമാക്കിയ, സമയോചിതമായ കാർഷിക ഉപദേശം നൽകുന്ന ഡിജിറ്റൽ സുഹൃത്ത്',
+      provideInfo: 'വിവരങ്ങൾ നൽകുക',
       ctaPrimary: 'Start Farming Journey',
       ctaSecondary: 'Learn More',
   localChat: 'ലോക്കൽ ചാറ്റ്',
@@ -117,10 +119,12 @@ function App() {
       footerNote: 'Fund availability is subject to availability through government sanction.',
       greeting: 'Hello! I am Krishi Sakhi, your personal farming assistant. How can I help?',
       placeholder: 'How can I help?',
-      error: 'Sorry, there was a server issue. Please try again later.'
+      error: 'Sorry, there was a server issue. Please try again later.',
+      provideInfo: 'Provide Info',
     }
   }
   const [isChatOpen, setIsChatOpen] = useState(false)
+  const [isFarmerFormOpen, setIsFarmerFormOpen] = useState(false)
   const [isFullScreen, setIsFullScreen] = useState(false)
   const [chatMode, setChatMode] = useState('cloud')
   const defaultMessages = (lng) => ([{ id: 1, text: TEXTS[lng].greeting, sender: 'bot' }])
@@ -381,7 +385,15 @@ function App() {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => openChat('cloud')}
+              onClick={() => setIsFarmerFormOpen(true)}
+              className="text-green-700 px-7 py-4 rounded-full text-base md:text-lg font-semibold transition-all duration-300 cta-btn secondary-cta"
+            >
+              {TEXTS[lang].provideInfo}
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setIsChatOpen(true)}
               className="bg-green-600 hover:bg-green-700 text-white px-7 py-4 rounded-full text-base md:text-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl cta-btn primary-cta"
             >
               {TEXTS[lang].ctaPrimary}
@@ -734,6 +746,10 @@ function App() {
             </motion.div>
           </motion.div>
         )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isFarmerFormOpen && <FarmerInfoForm isOpen={isFarmerFormOpen} onClose={() => setIsFarmerFormOpen(false)} language={lang} />}
       </AnimatePresence>
     </div>
   )
