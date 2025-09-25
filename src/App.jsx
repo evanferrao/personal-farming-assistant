@@ -357,7 +357,7 @@ function App() {
       </section>
 
       {/* Footer */}
-  <footer className="bg-green-800 text-white py-10 px-4 md:py-12 md:px-6">
+  <footer className="bg-green-800 text-green-600 py-10 px-4 md:py-12 md:px-6">
         <div className="container mx-auto text-center">
           <motion.div 
             initial={{ opacity: 0, y: 50 }}
@@ -366,7 +366,7 @@ function App() {
             className="flex items-center justify-center space-x-3 mb-6"
           >
             <Sprout className="w-8 h-8" />
-            <span className="text-2xl font-bold">{TEXTS[lang].brand}</span>
+            <span className="text-2xl font-bold text-green-800">{TEXTS[lang].brand}</span>
           </motion.div>
           <p className="text-green-200 mb-4">{TEXTS[lang].footerTag}</p>
           <p className="text-green-300 text-sm">{TEXTS[lang].footerNote}</p>
