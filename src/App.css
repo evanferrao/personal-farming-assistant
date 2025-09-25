@@ -441,8 +441,7 @@ html {
   border: none;
   outline: none;
   box-shadow: 0 12px 24px rgba(22,163,74,0.25);
-  padding-top: 0.8rem; /* slightly smaller for mobile */
-  padding-bottom: 0.8rem;
+  padding: 0.8rem; /* slightly smaller for mobile */
 }
 
 [data-theme="dark"] .chat-launch-btn {
