@@ -38,7 +38,10 @@ This project is built with:
 
 This repo includes two backend options. For local development, run the Node server:
 
-1) Create `server/.env` from `server/.env.example` and set `API_KEY` and `MODEL`.
+1) Create `server/.env` from `server/.env.example` and set:
+   - `API_KEY` and `MODEL` for Gemini chat
+   - `SYSTEM_PROMPT` (optional)
+   - `WEATHER_API_KEY` for WeatherAPI lookups
 2) In one terminal:
     - `cd server && npm install && npm run dev`
 3) In another terminal:
@@ -59,11 +62,22 @@ You can deploy the stateless chat endpoint as a Cloudflare Worker so your API ke
       - `wrangler secret put API_KEY`
       - `wrangler secret put SYSTEM_PROMPT`
       - `wrangler secret put MODEL`
+      - `wrangler secret put WEATHER_API_KEY`
    - `wrangler deploy`
 
 The deploy command will output a Worker URL like `https://farmerportal-api.your-account.workers.dev`.
 
 In GitHub Pages build, set `VITE_API_BASE` to that Worker URL so the frontend calls it at runtime.
+
+### Weather proxy endpoints
+
+Both the Express server (`/api/weather`) and the Cloudflare Worker mirror WeatherAPI's current-weather endpoint so the client never exposes its own IP or API key.
+
+- Request format: `GET /api/weather?ip=203.0.113.42`
+- If the `ip` query param is omitted the proxy falls back to the request's forwarded IP (or WeatherAPI's `auto:ip`).
+- Response: raw JSON payload from WeatherAPI.
+
+On the frontend you can obtain the visitor IP (for example by calling `https://ip.me`) and pass it to `/api/weather`.
 
 
 ## Available Scripts

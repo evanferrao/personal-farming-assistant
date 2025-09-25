@@ -12,6 +12,41 @@ export default {
       return json({ ok: true })
     }
 
+    if (url.pathname === '/api/ip') {
+      const forwardedHeader = request.headers.get('x-forwarded-for') || ''
+      const forwardedIp = forwardedHeader.split(',')[0].trim()
+      const connectingIp = (request.headers.get('cf-connecting-ip') || '').trim()
+      const realIp = connectingIp || forwardedIp || null
+      return json({ ip: realIp })
+    }
+
+    if (url.pathname === '/api/weather' && request.method === 'GET') {
+      if (!env.WEATHER_API_KEY) {
+        return json({ error: 'Server not configured: WEATHER_API_KEY missing' }, 500)
+      }
+
+      const ipParam = (url.searchParams.get('ip') || '').trim()
+      const forwardedHeader = request.headers.get('x-forwarded-for') || ''
+      const forwardedIp = forwardedHeader.split(',')[0].trim()
+      const connectingIp = (request.headers.get('cf-connecting-ip') || '').trim()
+      const queryTarget = ipParam || connectingIp || forwardedIp || 'auto:ip'
+
+      const weatherUrl = new URL('https://api.weatherapi.com/v1/current.json')
+      weatherUrl.searchParams.set('key', env.WEATHER_API_KEY)
+      weatherUrl.searchParams.set('q', queryTarget)
+
+      const resp = await fetch(weatherUrl.toString(), { headers: { Accept: 'application/json' } })
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}))
+        const message = err?.error?.message || 'Failed to fetch weather data'
+        const status = resp.status >= 400 ? resp.status : 502
+        return json({ error: message }, status)
+      }
+
+      const data = await resp.json()
+      return json(data)
+    }
+
     if (url.pathname === '/api/chat' && request.method === 'POST') {
       try {
         const { messages = [], locale = env.LOCALE || 'ml-IN', sessionId } = await request.json()

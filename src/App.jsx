@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { MessageCircle, X, Send, Sprout, Users, TrendingUp, Brain, Shield, Clock, MapPin, Droplets, Bug, Maximize2, Minimize2 } from 'lucide-react'
 import './App.css'
 import { sendChat } from './lib/chat'
+import { fetchWeatherForClient } from './lib/weather'
 
 function App() {
   // Language selection (ml | en)
@@ -36,6 +37,21 @@ function App() {
         alerts: 'വിള പ്രവർത്തനങ്ങൾ, സ്കീം ഡെഡ്‌ലൈനുകൾ, വില ട്രെൻഡുകൾ എന്നിവയ്ക്കായി സമയബന്ധിതമായ നഡ്ജുകൾ അയയ്ക്കുക',
         knowledge: 'പ്രാദേശിക ക്രോപ്പ് കലണ്ടറുകൾ, പെസ്റ്റ് ഡാറ്റ, മികച്ച രീതികൾ എന്നിവയിൽ നിന്ന് വലിച്ചെടുക്കുക'
       },
+      weather: {
+        title: 'പ്രാദേശിക കാലാവസ്ഥ',
+        subtitle: 'ഇപ്പൊഴത്തെ കാലാവസ്ഥയുടെ ചുരുക്കം',
+        loading: 'കാലാവസ്ഥ വിവരങ്ങൾ ലോഡ് ചെയ്യുന്നു…',
+        error: 'ഇപ്പോൾ കാലാവസ്ഥ വിവരങ്ങൾ ലഭ്യമല്ല.',
+        location: 'സ്ഥലം',
+        condition: 'കാലാവസ്ഥ',
+        temperature: 'താപനില',
+        feelsLike: 'അനുഭവിക്കുന്ന താപനില',
+        humidity: 'ആർദ്രത',
+        wind: 'കാറ്റ്',
+        precipitation: 'മഴ',
+        updated: 'അവസാനം പുതുക്കിയത്',
+        ipLabel: 'IP ഉപയോഗിച്ചത്'
+      },
       impactTitle: 'Expected Impact',
       impactTag: '"കൃഷി സഖി" - വിള ചക്രത്തിലുടനീളം കർഷകനോടൊപ്പം നടക്കുന്ന ഒരു ഡിജിറ്റൽ സുഹൃത്ത്',
       impacts: [
@@ -67,6 +83,21 @@ function App() {
         alerts: 'Send timely nudges for crop tasks, scheme deadlines, and price trends',
         knowledge: 'Draw from local crop calendars, pest data, and best practices'
       },
+      weather: {
+        title: 'Local Weather Snapshot',
+        subtitle: 'Current conditions near you',
+        loading: 'Fetching weather details…',
+        error: 'Weather data is temporarily unavailable.',
+        location: 'Location',
+        condition: 'Condition',
+        temperature: 'Temperature',
+        feelsLike: 'Feels like',
+        humidity: 'Humidity',
+        wind: 'Wind',
+        precipitation: 'Rain',
+        updated: 'Last updated',
+        ipLabel: 'IP used'
+      },
       impactTitle: 'Expected Impact',
       impactTag: 'A digital friend who walks with the farmer across the crop cycle',
       impacts: [
@@ -87,6 +118,10 @@ function App() {
   const [messages, setMessages] = useState(() => defaultMessages(lang))
   const [inputMessage, setInputMessage] = useState("")
     const [isTyping, setIsTyping] = useState(false)
+  const [weatherInfo, setWeatherInfo] = useState(null)
+  const [weatherIp, setWeatherIp] = useState('auto:ip')
+  const [weatherError, setWeatherError] = useState(null)
+  const [isWeatherLoading, setIsWeatherLoading] = useState(true)
   // Theme (dark | light), default dark
   const getInitialTheme = () => {
     try {
@@ -139,6 +174,32 @@ function App() {
       return () => {}
     }, [isChatOpen])
 
+    useEffect(() => {
+      let cancelled = false
+      async function loadWeather() {
+        setIsWeatherLoading(true)
+        try {
+          const { data, ip } = await fetchWeatherForClient()
+          if (!cancelled) {
+            setWeatherInfo(data)
+            setWeatherIp(ip)
+            setWeatherError(null)
+          }
+        } catch (error) {
+          if (!cancelled) {
+            setWeatherError(error?.message || 'Weather unavailable')
+            setWeatherInfo(null)
+          }
+        } finally {
+          if (!cancelled) setIsWeatherLoading(false)
+        }
+      }
+      loadWeather()
+      return () => {
+        cancelled = true
+      }
+    }, [locale])
+
   const handleSendMessage = async () => {
     const text = inputMessage.trim()
     if (!text) return
@@ -168,6 +229,44 @@ function App() {
     { icon: Brain, title: 'Personalized Advisory', getDesc: d => d.advisory },
     { icon: Shield, title: 'Reminders & Alerts', getDesc: d => d.alerts },
     { icon: Sprout, title: 'Knowledge Engine', getDesc: d => d.knowledge }
+  ]
+
+  const weatherStrings = TEXTS[lang].weather
+  const weatherCurrent = weatherInfo?.current || null
+  const weatherLocation = weatherInfo?.location || null
+
+  const formatNumber = (value, suffix = '') => {
+    if (typeof value !== 'number' || Number.isNaN(value)) return '--'
+    const rounded = Math.round(value * 10) / 10
+    return `${rounded}${suffix}`
+  }
+
+  const conditionIconRaw = weatherCurrent?.condition?.icon || ''
+  const conditionIcon = conditionIconRaw
+    ? (conditionIconRaw.startsWith('http') ? conditionIconRaw : `https:${conditionIconRaw}`)
+    : null
+  const conditionText = weatherCurrent?.condition?.text || ''
+
+  const locationLabel = weatherLocation
+    ? [weatherLocation.name, weatherLocation.region, weatherLocation.country].filter(Boolean).join(', ')
+    : ''
+
+  const temperatureLabel = formatNumber(weatherCurrent?.temp_c, '°C')
+  const feelsLikeLabel = formatNumber(weatherCurrent?.feelslike_c, '°C')
+  const humidityLabel = formatNumber(weatherCurrent?.humidity, '%')
+  const precipLabel = formatNumber(weatherCurrent?.precip_mm, ' mm')
+
+  const windLabel = typeof weatherCurrent?.wind_kph === 'number'
+    ? `${formatNumber(weatherCurrent.wind_kph, ' km/h')}${weatherCurrent?.wind_dir ? ` ${weatherCurrent.wind_dir}` : ''}`.trim()
+    : '--'
+
+  const weatherUpdated = weatherCurrent?.last_updated || weatherLocation?.localtime || ''
+
+  const weatherMetrics = [
+    { label: weatherStrings.feelsLike, value: feelsLikeLabel },
+    { label: weatherStrings.humidity, value: humidityLabel },
+    { label: weatherStrings.wind, value: windLabel },
+    { label: weatherStrings.precipitation, value: precipLabel }
   ]
 
   // impacts moved into TEXTS
@@ -356,6 +455,55 @@ function App() {
         </div>
       </section>
 
+      {/* Weather Summary */}
+  <section className="py-16 px-4 md:py-20 md:px-6">
+        <div className="container mx-auto">
+          <div className={`${theme === 'dark' ? 'bg-dark-card text-green-100' : 'bg-white'} rounded-2xl p-8 shadow-lg border border-green-100 weather-card`}>
+            <h2 className="text-3xl font-bold text-green-800 mb-4 weather-title">Local Weather Snapshot</h2>
+            {isWeatherLoading ? (
+              <p className="text-green-700">Loading weather details…</p>
+            ) : weatherError ? (
+              <p className="weather-error">Unable to load weather data: {weatherError}</p>
+            ) : weatherInfo ? (
+              <div className="weather-content">
+                <div className="weather-leading">
+                  <div className="weather-location">
+                    <p className="weather-location-name">{weatherInfo.location?.name}{weatherInfo.location?.region ? `, ${weatherInfo.location.region}` : ''}</p>
+                    <p className="weather-location-meta">Lat {weatherInfo.location?.lat?.toFixed?.(2)}°, Lon {weatherInfo.location?.lon?.toFixed?.(2)}°</p>
+                    <p className="weather-location-meta">Updated {weatherInfo.current?.last_updated || weatherInfo.location?.localtime}</p>
+                  </div>
+                  <div className="weather-temperature">
+                    <span className="weather-temp">{Math.round(weatherInfo.current?.temp_c ?? 0)}°C</span>
+                    <span className="weather-condition">{weatherInfo.current?.condition?.text}</span>
+                  </div>
+                </div>
+                <div className="weather-grid">
+                  <div className="weather-metric">
+                    <p className="weather-label">Feels Like</p>
+                    <p className="weather-value">{Math.round(weatherInfo.current?.feelslike_c ?? 0)}°C</p>
+                  </div>
+                  <div className="weather-metric">
+                    <p className="weather-label">Humidity</p>
+                    <p className="weather-value">{weatherInfo.current?.humidity ?? '--'}%</p>
+                  </div>
+                  <div className="weather-metric">
+                    <p className="weather-label">Wind</p>
+                    <p className="weather-value">{weatherInfo.current?.wind_kph ?? '--'} kph</p>
+                  </div>
+                  <div className="weather-metric">
+                    <p className="weather-label">Visibility</p>
+                    <p className="weather-value">{weatherInfo.current?.vis_km ?? '--'} km</p>
+                  </div>
+                </div>
+                <p className="weather-ip">Lookup source: {weatherIp}</p>
+              </div>
+            ) : (
+              <p className="text-green-700">Weather data unavailable.</p>
+            )}
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
   <footer className="bg-green-800 text-green-600 py-10 px-4 md:py-12 md:px-6">
         <div className="container mx-auto text-center">
@@ -372,6 +520,79 @@ function App() {
           <p className="text-green-300 text-sm">{TEXTS[lang].footerNote}</p>
         </div>
       </footer>
+
+      {/* Weather Section */}
+      <section className="weather-section px-4 md:px-6">
+        <div className="container mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-center mb-10"
+          >
+            <h2 className="text-4xl md:text-5xl font-bold text-green-800 mb-4">
+              {weatherStrings.title}
+            </h2>
+            <p className="text-green-700">
+              {weatherStrings.subtitle}
+            </p>
+          </motion.div>
+
+          {isWeatherLoading ? (
+            <div className="weather-card weather-message">
+              {weatherStrings.loading}
+            </div>
+          ) : weatherError ? (
+            <div className="weather-card weather-message weather-message-error">
+              {weatherError || weatherStrings.error}
+            </div>
+          ) : weatherInfo ? (
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="weather-card"
+            >
+              <div className="weather-top">
+                <div className="weather-top-left">
+                  {conditionIcon && (
+                    <img
+                      src={conditionIcon}
+                      alt={conditionText || 'Weather icon'}
+                      className="weather-icon"
+                      loading="lazy"
+                    />
+                  )}
+                  <div>
+                    <p className="weather-location">{locationLabel || weatherStrings.location}</p>
+                    <p className="weather-condition">{conditionText || weatherStrings.condition}</p>
+                  </div>
+                </div>
+                <div className="weather-temp">
+                  <span className="weather-temp-value">{temperatureLabel}</span>
+                  <span className="weather-temp-label">{weatherStrings.temperature}</span>
+                </div>
+              </div>
+
+              <div className="weather-metrics">
+                {weatherMetrics.map(metric => (
+                  <div key={metric.label} className="weather-metric">
+                    <span className="metric-label">{metric.label}</span>
+                    <span className="metric-value">{metric.value}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="weather-meta">
+                <span>{weatherStrings.updated}: {weatherUpdated || '--'}</span>
+                {weatherIp && (
+                  <span>{weatherStrings.ipLabel}: {weatherIp}</span>
+                )}
+              </div>
+            </motion.div>
+          ) : null}
+        </div>
+      </section>
 
       {/* Chat Interface */}
       <AnimatePresence>
