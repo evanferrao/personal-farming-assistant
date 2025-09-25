@@ -455,54 +455,78 @@ function App() {
         </div>
       </section>
 
-      {/* Weather Summary */}
-  <section className="py-16 px-4 md:py-20 md:px-6">
-        <div className="container mx-auto">
-          <div className={`${theme === 'dark' ? 'bg-dark-card text-green-100' : 'bg-white'} rounded-2xl p-8 shadow-lg border border-green-100 weather-card`}>
-            <h2 className="text-3xl font-bold text-green-800 mb-4 weather-title">Local Weather Snapshot</h2>
-            {isWeatherLoading ? (
-              <p className="text-green-700">Loading weather details…</p>
-            ) : weatherError ? (
-              <p className="weather-error">Unable to load weather data: {weatherError}</p>
-            ) : weatherInfo ? (
-              <div className="weather-content">
-                <div className="weather-leading">
-                  <div className="weather-location">
-                    <p className="weather-location-name">{weatherInfo.location?.name}{weatherInfo.location?.region ? `, ${weatherInfo.location.region}` : ''}</p>
-                    <p className="weather-location-meta">Lat {weatherInfo.location?.lat?.toFixed?.(2)}°, Lon {weatherInfo.location?.lon?.toFixed?.(2)}°</p>
-                    <p className="weather-location-meta">Updated {weatherInfo.current?.last_updated || weatherInfo.location?.localtime}</p>
-                  </div>
-                  <div className="weather-temperature">
-                    <span className="weather-temp">{Math.round(weatherInfo.current?.temp_c ?? 0)}°C</span>
-                    <span className="weather-condition">{weatherInfo.current?.condition?.text}</span>
-                  </div>
-                </div>
-                <div className="weather-grid">
-                  <div className="weather-metric">
-                    <p className="weather-label">Feels Like</p>
-                    <p className="weather-value">{Math.round(weatherInfo.current?.feelslike_c ?? 0)}°C</p>
-                  </div>
-                  <div className="weather-metric">
-                    <p className="weather-label">Humidity</p>
-                    <p className="weather-value">{weatherInfo.current?.humidity ?? '--'}%</p>
-                  </div>
-                  <div className="weather-metric">
-                    <p className="weather-label">Wind</p>
-                    <p className="weather-value">{weatherInfo.current?.wind_kph ?? '--'} kph</p>
-                  </div>
-                  <div className="weather-metric">
-                    <p className="weather-label">Visibility</p>
-                    <p className="weather-value">{weatherInfo.current?.vis_km ?? '--'} km</p>
-                  </div>
-                </div>
-                <p className="weather-ip">Lookup source: {weatherIp}</p>
+{/* Weather Section */}
+  <section className="weather-section px-4 md:px-6">
+    <div className="container mx-auto">
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+        className="text-center mb-10"
+      >
+        <h2 className="text-4xl md:text-5xl font-bold text-green-800 mb-4">
+          {weatherStrings.title}
+        </h2>
+        <p className="text-green-700 py-14">
+          {weatherStrings.subtitle}
+        </p>
+      </motion.div>
+
+      {isWeatherLoading ? (
+        <div className="weather-card weather-message">
+          {weatherStrings.loading}
+        </div>
+      ) : weatherError ? (
+        <div className="weather-card weather-message weather-message-error">
+          {weatherError || weatherStrings.error}
+        </div>
+      ) : weatherInfo ? (
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="weather-card"
+        >
+          <div className="weather-top">
+            <div className="weather-top-left">
+              {conditionIcon && (
+                <img
+                  src={conditionIcon}
+                  alt={conditionText || 'Weather icon'}
+                  className="weather-icon"
+                  loading="lazy"
+                />
+              )}
+              <div>
+                <p className="weather-location">{locationLabel || weatherStrings.location}</p>
+                <p className="weather-condition">{conditionText || weatherStrings.condition}</p>
               </div>
-            ) : (
-              <p className="text-green-700">Weather data unavailable.</p>
+            </div>
+            <div className="weather-temp">
+              <span className="weather-temp-value">{temperatureLabel}</span>
+              <span className="weather-temp-label">{weatherStrings.temperature}</span>
+            </div>
+          </div>
+
+          <div className="weather-metrics">
+            {weatherMetrics.map(metric => (
+              <div key={metric.label} className="weather-metric">
+                <span className="metric-label">{metric.label}</span>
+                <span className="metric-value">{metric.value}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="weather-meta">
+            <span>{weatherStrings.updated}: {weatherUpdated || '--'}</span>
+            {weatherIp && (
+              <span>{weatherStrings.ipLabel}: {weatherIp}</span>
             )}
           </div>
-        </div>
-      </section>
+        </motion.div>
+      ) : null}
+    </div>
+  </section>
 
       {/* Footer */}
   <footer className="bg-green-800 text-green-600 py-10 px-4 md:py-12 md:px-6">
@@ -521,78 +545,7 @@ function App() {
         </div>
       </footer>
 
-      {/* Weather Section */}
-      <section className="weather-section px-4 md:px-6">
-        <div className="container mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-10"
-          >
-            <h2 className="text-4xl md:text-5xl font-bold text-green-800 mb-4">
-              {weatherStrings.title}
-            </h2>
-            <p className="text-green-700">
-              {weatherStrings.subtitle}
-            </p>
-          </motion.div>
-
-          {isWeatherLoading ? (
-            <div className="weather-card weather-message">
-              {weatherStrings.loading}
-            </div>
-          ) : weatherError ? (
-            <div className="weather-card weather-message weather-message-error">
-              {weatherError || weatherStrings.error}
-            </div>
-          ) : weatherInfo ? (
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="weather-card"
-            >
-              <div className="weather-top">
-                <div className="weather-top-left">
-                  {conditionIcon && (
-                    <img
-                      src={conditionIcon}
-                      alt={conditionText || 'Weather icon'}
-                      className="weather-icon"
-                      loading="lazy"
-                    />
-                  )}
-                  <div>
-                    <p className="weather-location">{locationLabel || weatherStrings.location}</p>
-                    <p className="weather-condition">{conditionText || weatherStrings.condition}</p>
-                  </div>
-                </div>
-                <div className="weather-temp">
-                  <span className="weather-temp-value">{temperatureLabel}</span>
-                  <span className="weather-temp-label">{weatherStrings.temperature}</span>
-                </div>
-              </div>
-
-              <div className="weather-metrics">
-                {weatherMetrics.map(metric => (
-                  <div key={metric.label} className="weather-metric">
-                    <span className="metric-label">{metric.label}</span>
-                    <span className="metric-value">{metric.value}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="weather-meta">
-                <span>{weatherStrings.updated}: {weatherUpdated || '--'}</span>
-                {weatherIp && (
-                  <span>{weatherStrings.ipLabel}: {weatherIp}</span>
-                )}
-              </div>
-            </motion.div>
-          ) : null}
-        </div>
-      </section>
+      
 
       {/* Chat Interface */}
       <AnimatePresence>
