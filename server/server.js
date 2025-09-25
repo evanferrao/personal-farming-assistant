@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import multer from 'multer';
+import FormData from 'form-data';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AutoTokenizer, AutoModelForCausalLM } from '@xenova/transformers'; // <-- transformers.js
 import fetch from "node-fetch"; // make sure to npm install node-fetch
@@ -26,6 +28,11 @@ if (!WEATHER_API_KEY) {
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }
+});
 
 const SYSTEM_PROMPT = process.env.SYSTEM_PROMPT || '';
 
@@ -79,6 +86,82 @@ app.post('/api/localchat', async (req, res) => {
   } catch (err) {
     console.error('Local chat proxy error:', err);
     return res.status(500).json({ error: 'Failed to generate local response' });
+  }
+});
+
+/* ---------------- Speech to Text proxy ---------------- */
+app.post('/api/speechtotext', upload.single('audio'), async (req, res) => {
+  try {
+    const file = req.file;
+    if (!file) {
+      return res.status(400).json({ error: 'audio file is required' });
+    }
+
+    const language = typeof req.body.language === 'string' && req.body.language.trim()
+      ? req.body.language.trim()
+      : 'English';
+    const questionPrev = typeof req.body.question_prev === 'string'
+      ? req.body.question_prev
+      : typeof req.body.questionPrev === 'string'
+        ? req.body.questionPrev
+        : '';
+    const answerPrev = typeof req.body.answer_prev === 'string'
+      ? req.body.answer_prev
+      : typeof req.body.answerPrev === 'string'
+        ? req.body.answerPrev
+        : '';
+
+    const formData = new FormData();
+    formData.append('language', language);
+    formData.append('question_prev', questionPrev);
+    formData.append('answer_prev', answerPrev);
+    formData.append('audio', file.buffer, {
+      filename: file.originalname || 'audio.wav',
+      contentType: file.mimetype || 'audio/wav'
+    });
+
+    const upstreamResp = await fetch('https://api1.kissangpt.com/v1/inference/web', {
+      method: 'POST',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:139.0) Gecko/20100101 Firefox/139.0',
+        'Accept': 'application/json, text/plain, */*',
+        'Origin': 'https://kissan.ai',
+        'Referer': 'https://kissan.ai/'
+      },
+      body: formData
+    });
+
+    const bodyText = await upstreamResp.text();
+
+    if (!upstreamResp.ok) {
+      let upstreamError = null;
+      try {
+        upstreamError = JSON.parse(bodyText);
+      } catch (_) {}
+      const message = upstreamError?.error || 'Upstream service error';
+      return res.status(upstreamResp.status || 502).json({ error: message });
+    }
+
+    let data;
+    try {
+      data = JSON.parse(bodyText);
+    } catch (parseError) {
+      console.error('Speech to text parse error:', parseError);
+      return res.status(502).json({ error: 'Invalid response from upstream service' });
+    }
+
+    const questionRaw = typeof data.question === 'string' ? data.question : null;
+    const questionFallback = typeof data.question_en === 'string' ? data.question_en : null;
+    const transcription = questionRaw || questionFallback;
+
+    if (!transcription) {
+      return res.status(502).json({ error: 'Upstream response did not include a question' });
+    }
+
+    return res.json({ speechtotext: transcription });
+  } catch (error) {
+    console.error('Speech to text proxy error:', error);
+    return res.status(502).json({ error: 'Failed to proxy speech to text request' });
   }
 });
 
