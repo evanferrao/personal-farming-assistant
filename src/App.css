@@ -340,6 +340,7 @@ html {
 .chat-messages {
   padding-top: 16px;
   padding-bottom: 16px;
+  overflow-y: auto; /* independent scroll inside modal */
 }
 
 /* Ensure modal corners are actually rounded on all edges */
@@ -348,15 +349,61 @@ html {
   overflow: hidden; /* clip inner areas so the bottom looks curved */
 }
 
+/* When full screen (utility class added), keep bleed contained */
+.chat-modal.w-screen { overflow: hidden; }
+
+/* Fullscreen adjustments for safe areas on mobile */
+.chat-modal.fullscreen {
+  padding-top: max(env(safe-area-inset-top), 0px);
+  padding-bottom: max(env(safe-area-inset-bottom), 0px);
+}
+
+/* Light theme modal background should be pure white */
+[data-theme="light"] .chat-modal {
+  background: #ffffff;
+}
+
 /* Header compact divider and remove ugly focus border on close icon */
 .chat-header {
   border-bottom: 1px solid rgba(255,255,255,0.25);
+}
+
+/* In light theme, use subtle gray divider instead of translucent white */
+[data-theme="light"] .chat-header {
+  border-bottom: 1px solid rgba(229,231,235,0.9); /* gray-200 */
 }
 
 .icon-btn,
 .send-btn {
   border: none;
   outline: none;
+}
+
+.icon-btn {
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--green-800);
+  box-shadow: 0 6px 14px rgba(2, 132, 99, 0.12);
+  transition: all 0.2s ease;
+}
+
+.icon-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+[data-theme="dark"] .icon-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  box-shadow: 0 12px 24px rgba(6, 95, 70, 0.35);
+}
+
+[data-theme="dark"] .icon-btn:hover {
+  background: rgba(34, 197, 94, 0.2);
+}
+
+[data-theme="dark"] .icon-btn:active {
+  background: rgba(34, 197, 94, 0.28);
 }
 
 .icon-btn:focus,
@@ -369,14 +416,14 @@ html {
 
 /* Larger input and consistent send button size */
 .chat-input {
-  height: 56px;
-  padding: 0 16px;
+  height: 52px;
+  padding: 0 14px;
   font-size: 1rem;
 }
 
 .send-btn {
-  width: 56px;
-  height: 56px;
+  width: 52px;
+  height: 52px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -394,8 +441,12 @@ html {
   border: none;
   outline: none;
   box-shadow: 0 12px 24px rgba(22,163,74,0.25);
-  padding-top: 0.9rem; /* taller */
-  padding-bottom: 0.9rem;
+  padding-top: 0.8rem; /* slightly smaller for mobile */
+  padding-bottom: 0.8rem;
+}
+
+[data-theme="dark"] .chat-launch-btn {
+  box-shadow: 0 14px 28px rgba(6, 95, 70, 0.4);
 }
 
 /* Language toggle (segmented control) */
@@ -410,6 +461,12 @@ html {
   box-shadow: 0 6px 14px rgba(2, 132, 99, 0.12);
 }
 
+[data-theme="dark"] .lang-toggle {
+  background: rgba(17, 24, 21, 0.92);
+  border: 1px solid #1f3b2c;
+  box-shadow: 0 10px 20px rgba(6, 95, 70, 0.35);
+}
+
 .lang-btn {
   position: relative;
   appearance: none;
@@ -417,14 +474,74 @@ html {
   outline: none;
   cursor: pointer;
   border-radius: 9999px;
-  padding: 8px 14px;
-  min-width: 48px;
-  height: 36px;
-  font-size: 0.95rem;
+  padding: 8px 12px;
+  min-width: 44px;
+  height: 34px;
+  font-size: 0.9rem;
   font-weight: 700;
   color: var(--green-700);
   background: transparent;
   transition: all 0.2s ease;
+}
+
+[data-theme="dark"] .lang-btn {
+  color: #bbf7d0;
+}
+
+[data-theme="dark"] .lang-btn:hover {
+  background: rgba(15, 23, 20, 0.8);
+}
+
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.nav-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+@media (min-width: 640px) {
+  .nav-controls { gap: 20px; }
+}
+
+@media (min-width: 768px) {
+  .nav-controls { gap: 24px; }
+}
+
+/* Compact wrapping for controls on very small screens */
+@media (max-width: 380px) {
+  .lang-toggle { padding: 3px; }
+  .lang-btn { min-width: 40px; height: 32px; font-size: 0.85rem; }
+}
+
+@media (max-width: 640px) {
+  .nav-inner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .nav-controls {
+    width: 100%;
+    gap: 12px;
+    justify-content: space-between;
+  }
+
+  .nav-controls > * {
+    flex-shrink: 0;
+  }
+
+  .nav-controls .chat-launch-btn {
+    flex: 1 1 100%;
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 .lang-btn:hover {
@@ -435,6 +552,10 @@ html {
   color: #ffffff;
   background: linear-gradient(135deg, var(--green-600), var(--green-700));
   box-shadow: 0 6px 16px rgba(22, 163, 74, 0.35);
+}
+
+[data-theme="dark"] .lang-btn.active {
+  box-shadow: 0 10px 20px rgba(6, 95, 70, 0.45);
 }
 
 .lang-btn:focus-visible {

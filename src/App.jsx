@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { MessageCircle, X, Send, Sprout, Users, TrendingUp, Brain, Shield, Clock, MapPin, Droplets, Bug } from 'lucide-react'
+import { MessageCircle, X, Send, Sprout, Users, TrendingUp, Brain, Shield, Clock, MapPin, Droplets, Bug, Maximize2, Minimize2 } from 'lucide-react'
 import './App.css'
 import { sendChat } from './lib/chat'
 
@@ -82,6 +82,7 @@ function App() {
     }
   }
   const [isChatOpen, setIsChatOpen] = useState(false)
+  const [isFullScreen, setIsFullScreen] = useState(false)
   const defaultMessages = (lng) => ([{ id: 1, text: TEXTS[lng].greeting, sender: 'bot' }])
   const [messages, setMessages] = useState(() => defaultMessages(lang))
   const [inputMessage, setInputMessage] = useState("")
@@ -122,6 +123,21 @@ function App() {
     useEffect(() => {
       try { localStorage.setItem('pfa_chat_history', JSON.stringify(messages)) } catch {}
     }, [messages])
+
+    // Lock body scroll when chat is open
+    useEffect(() => {
+      const body = document.body
+      if (isChatOpen) {
+        const prev = body.style.overflow
+        body.dataset.prevOverflow = prev
+        body.style.overflow = 'hidden'
+        return () => {
+          body.style.overflow = body.dataset.prevOverflow || ''
+          delete body.dataset.prevOverflow
+        }
+      }
+      return () => {}
+    }, [isChatOpen])
 
   const handleSendMessage = async () => {
     const text = inputMessage.trim()
@@ -164,7 +180,7 @@ function App() {
         animate={{ y: 0 }}
   className={`${theme === 'dark' ? 'bg-dark-nav' : 'bg-white/90'} backdrop-blur-sm shadow-lg sticky top-0 z-50`}
       >
-        <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+        <div className="container mx-auto px-4 sm:px-6 py-4 nav-inner">
           <motion.div 
             whileHover={{ scale: 1.05 }}
             className="flex items-center space-x-3"
@@ -172,7 +188,7 @@ function App() {
             <Sprout className="w-8 h-8 text-green-600" />
             <span className="text-2xl font-bold text-green-800">{TEXTS[lang].brand}</span>
           </motion.div>
-          <div className="flex items-center gap-3">
+          <div className="nav-controls">
             <div className="lang-toggle">
               <button
                 onClick={() => setLang('ml')}
@@ -203,7 +219,7 @@ function App() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setIsChatOpen(true)}
-              className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-full flex items-center space-x-2 transition-all duration-300 shadow-lg hover:shadow-xl chat-launch-btn"
+              className="bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-full flex items-center space-x-2 transition-all duration-300 shadow-lg hover:shadow-xl chat-launch-btn"
             >
               <MessageCircle className="w-5 h-5" />
               <span>{TEXTS[lang].chatNow}</span>
@@ -213,13 +229,13 @@ function App() {
       </motion.nav>
 
       {/* Hero Section */}
-      <section className="py-20 px-6">
+  <section className="py-16 px-4 md:py-20 md:px-6">
         <div className="container mx-auto text-center">
           <motion.h1 
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="text-5xl md:text-7xl font-bold text-green-800 mb-6 leading-tight"
+            className="text-4xl md:text-7xl font-bold text-green-800 mb-6 leading-tight"
           >
             AI-Powered Personal<br />
             <span className="text-green-600">Farming Assistant</span>
@@ -238,20 +254,20 @@ function App() {
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center"
+            className="flex flex-col sm:flex-row gap-4 sm:gap-5 md:gap-6 justify-center"
           >
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setIsChatOpen(true)}
-              className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-full text-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl cta-btn primary-cta"
+              className="bg-green-600 hover:bg-green-700 text-white px-7 py-4 rounded-full text-base md:text-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl cta-btn primary-cta"
             >
               {TEXTS[lang].ctaPrimary}
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="text-green-700 px-8 py-4 rounded-full text-lg font-semibold transition-all duration-300 cta-btn secondary-cta"
+              className="text-green-700 px-7 py-4 rounded-full text-base md:text-lg font-semibold transition-all duration-300 cta-btn secondary-cta"
             >
               {TEXTS[lang].ctaSecondary}
             </motion.button>
@@ -260,7 +276,7 @@ function App() {
       </section>
 
       {/* Problem Section */}
-      <section className="py-16 px-6 bg-white/50">
+  <section className="py-14 px-4 md:py-16 md:px-6 bg-white">
         <div className="container mx-auto">
           <motion.div 
             initial={{ opacity: 0, y: 50 }}
@@ -277,7 +293,7 @@ function App() {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 px-6">
+  <section className="py-16 px-4 md:py-20 md:px-6">
         <div className="container mx-auto">
           <motion.div 
             initial={{ opacity: 0, y: 50 }}
@@ -289,7 +305,7 @@ function App() {
             <p className="text-xl text-green-700">{TEXTS[lang].featuresTag}</p>
           </motion.div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             {features.map((feature, index) => (
               <motion.div
                 key={index}
@@ -311,7 +327,7 @@ function App() {
       </section>
 
       {/* Expected Impact Section */}
-      <section className="py-20 px-6 bg-green-600 text-white">
+  <section className="py-16 px-4 md:py-20 md:px-6 bg-green-600 text-white">
         <div className="container mx-auto">
           <motion.div 
             initial={{ opacity: 0, y: 50 }}
@@ -323,7 +339,7 @@ function App() {
             <p className="text-xl opacity-90">{TEXTS[lang].impactTag}</p>
           </motion.div>
           
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             {TEXTS[lang].impacts.map((impact, index) => (
               <motion.div
                 key={index}
@@ -341,7 +357,7 @@ function App() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-green-800 text-white py-12 px-6">
+  <footer className="bg-green-800 text-white py-10 px-4 md:py-12 md:px-6">
         <div className="container mx-auto text-center">
           <motion.div 
             initial={{ opacity: 0, y: 50 }}
@@ -364,16 +380,16 @@ function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+            className={`fixed inset-0 bg-black/50 z-50 flex ${isFullScreen ? '' : 'items-center justify-center'} ${isFullScreen ? 'p-0' : 'p-2 sm:p-4'}`}
           >
             <motion.div
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.5, opacity: 0 }}
-              className="bg-white rounded-2xl w-full max-w-2xl h-[600px] flex flex-col shadow-2xl chat-modal"
+              className={`bg-white ${isFullScreen ? 'w-screen h-100dvh rounded-none fullscreen' : 'w-full max-w-2xl h-85dvh sm:h-[600px] rounded-2xl'} flex flex-col shadow-2xl chat-modal`}
             >
               {/* Chat Header */}
-              <div className="bg-green-600 text-white p-6 rounded-t-2xl flex justify-between items-center chat-header">
+              <div className={`bg-green-600 text-white p-6 ${isFullScreen ? '' : 'rounded-t-2xl'} flex justify-between items-center chat-header`}>
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
                     <Sprout className="w-6 h-6" />
@@ -383,12 +399,22 @@ function App() {
                     <p className="text-green-100 text-sm">Your AI Farming Assistant</p>
                   </div>
                 </div>
-                <button
-                  onClick={() => setIsChatOpen(false)}
-                  className="hover:bg-green-500 p-2 rounded-full transition-colors icon-btn"
-                >
-                  <X className="w-6 h-6" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setIsFullScreen(v => !v)}
+                    className="hover:bg-green-500 p-2 rounded-full transition-colors icon-btn"
+                    title={isFullScreen ? 'Exit full screen' : 'Full screen'}
+                  >
+                    {isFullScreen ? <Minimize2 className="w-6 h-6" /> : <Maximize2 className="w-6 h-6" />}
+                  </button>
+                  <button
+                    onClick={() => { setIsChatOpen(false); setIsFullScreen(false); }}
+                    className="hover:bg-green-500 p-2 rounded-full transition-colors icon-btn"
+                    title="Close"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
               </div>
 
               {/* Chat Messages */}
