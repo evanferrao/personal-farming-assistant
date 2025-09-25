@@ -410,6 +410,13 @@ html {
   box-shadow: 0 6px 14px rgba(2, 132, 99, 0.12);
 }
 
+@media (max-width: 640px) {
+  .lang-toggle {
+    gap: 2px;
+    padding: 2px;
+  }
+}
+
 .lang-btn {
   position: relative;
   appearance: none;
@@ -425,6 +432,15 @@ html {
   color: var(--green-700);
   background: transparent;
   transition: all 0.2s ease;
+}
+
+@media (max-width: 640px) {
+  .lang-btn {
+    padding: 6px 10px;
+    min-width: 36px;
+    height: 32px;
+    font-size: 0.85rem;
+  }
 }
 
 .lang-btn:hover {

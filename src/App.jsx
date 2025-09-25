@@ -164,15 +164,15 @@ function App() {
         animate={{ y: 0 }}
   className={`${theme === 'dark' ? 'bg-dark-nav' : 'bg-white/90'} backdrop-blur-sm shadow-lg sticky top-0 z-50`}
       >
-        <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+        <div className="container mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
           <motion.div 
             whileHover={{ scale: 1.05 }}
-            className="flex items-center space-x-3"
+            className="flex items-center space-x-2 sm:space-x-3"
           >
             <Sprout className="w-8 h-8 text-green-600" />
-            <span className="text-2xl font-bold text-green-800">{TEXTS[lang].brand}</span>
+            <span className="text-xl sm:text-2xl font-bold text-green-800">{TEXTS[lang].brand}</span>
           </motion.div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <div className="lang-toggle">
               <button
                 onClick={() => setLang('ml')}
@@ -203,10 +203,10 @@ function App() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setIsChatOpen(true)}
-              className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-full flex items-center space-x-2 transition-all duration-300 shadow-lg hover:shadow-xl chat-launch-btn"
+              className="bg-green-600 hover:bg-green-700 text-white px-2 sm:px-6 py-3 rounded-full flex items-center space-x-1 sm:space-x-2 transition-all duration-300 shadow-lg hover:shadow-xl chat-launch-btn"
             >
               <MessageCircle className="w-5 h-5" />
-              <span>{TEXTS[lang].chatNow}</span>
+              <span className="hidden sm:inline">{TEXTS[lang].chatNow}</span>
             </motion.button>
           </div>
         </div>
@@ -289,7 +289,7 @@ function App() {
             <p className="text-xl text-green-700">{TEXTS[lang].featuresTag}</p>
           </motion.div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3">
             {features.map((feature, index) => (
               <motion.div
                 key={index}
@@ -323,7 +323,7 @@ function App() {
             <p className="text-xl opacity-90">{TEXTS[lang].impactTag}</p>
           </motion.div>
           
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid gap-6 sm:gap-8 md:grid-cols-3">
             {TEXTS[lang].impacts.map((impact, index) => (
               <motion.div
                 key={index}
