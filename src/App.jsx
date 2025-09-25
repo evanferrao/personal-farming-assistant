@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { MessageCircle, X, Send, Sprout, Users, TrendingUp, Brain, Shield, Clock, MapPin, Droplets, Bug, Maximize2, Minimize2 } from 'lucide-react'
 import './App.css'
 import { sendChat } from './lib/chat'
+import FarmerInfoForm from './FarmerInfoForm'
 
 function App() {
   // Language selection (ml | en)
@@ -22,6 +23,7 @@ function App() {
       brand: 'കൃഷി സഖി',
       chatNow: 'Chat Now',
       heroSubtitle: 'Kerala കർഷകർക്കായി വ്യക്തിഗതമാക്കിയ, സമയോചിതമായ കാർഷിക ഉപദേശം നൽകുന്ന ഡിജിറ്റൽ സുഹൃത്ത്',
+      provideInfo: 'വിവരങ്ങൾ നൽകുക',
       ctaPrimary: 'Start Farming Journey',
       ctaSecondary: 'Learn More',
       challengeTitle: 'The Challenge',
@@ -78,10 +80,12 @@ function App() {
       footerNote: 'Fund availability is subject to availability through government sanction.',
       greeting: 'Hello! I am Krishi Sakhi, your personal farming assistant. How can I help?',
       placeholder: 'How can I help?',
-      error: 'Sorry, there was a server issue. Please try again later.'
+      error: 'Sorry, there was a server issue. Please try again later.',
+      provideInfo: 'Provide Info',
     }
   }
   const [isChatOpen, setIsChatOpen] = useState(false)
+  const [isFarmerFormOpen, setIsFarmerFormOpen] = useState(false)
   const [isFullScreen, setIsFullScreen] = useState(false)
   const defaultMessages = (lng) => ([{ id: 1, text: TEXTS[lng].greeting, sender: 'bot' }])
   const [messages, setMessages] = useState(() => defaultMessages(lang))
@@ -256,6 +260,14 @@ function App() {
             transition={{ duration: 0.8, delay: 0.4 }}
             className="flex flex-col sm:flex-row gap-4 sm:gap-5 md:gap-6 justify-center"
           >
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setIsFarmerFormOpen(true)}
+              className="text-green-700 px-7 py-4 rounded-full text-base md:text-lg font-semibold transition-all duration-300 cta-btn secondary-cta"
+            >
+              {TEXTS[lang].provideInfo}
+            </motion.button>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -479,6 +491,10 @@ function App() {
             </motion.div>
           </motion.div>
         )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isFarmerFormOpen && <FarmerInfoForm isOpen={isFarmerFormOpen} onClose={() => setIsFarmerFormOpen(false)} language={lang} />}
       </AnimatePresence>
     </div>
   )
