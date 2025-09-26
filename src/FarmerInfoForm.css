@@ -1,8 +1,13 @@
+/* FarmerInfoForm.css */
+
 :root {
+  /* THEME-ALIGNED ACCENT COLORS */
   --form-green: #16a34a;
   --form-green-dark: #065f46;
-  --form-sky: #38bdf8;
-  --form-indigo: #6366f1;
+  --form-sky: #22c55e;
+  --form-indigo: #059669;
+  
+  /* STRUCTURAL COLORS */
   --form-background: rgba(255, 255, 255, 0.96);
   --form-background-muted: rgba(240, 253, 244, 0.94);
   --form-border: rgba(15, 118, 110, 0.18);
@@ -19,8 +24,8 @@
   --form-border: rgba(148, 163, 184, 0.22);
   --form-text: #e2e8f0;
   --form-muted: #94a3b8;
-  --form-surface: rgba(8, 15, 24, 0.78);
-  --form-surface-strong: rgba(12, 22, 34, 0.86);
+  --form-surface: rgba(11, 19, 16, 0.78); /* FIXED: Aligned with site's dark green-gray */
+  --form-surface-strong: rgba(15, 23, 20, 0.86); /* FIXED: Aligned with site's dark green-gray */
   --form-shadow: 0 50px 110px -44px rgba(0, 0, 0, 0.65);
 }
 
@@ -58,14 +63,14 @@
   align-items: flex-start;
   gap: 1.5rem;
   padding: 1rem 1.25rem 0.75rem;
-  background: linear-gradient(120deg, rgba(56, 189, 248, 0.14), rgba(22, 163, 74, 0.18));
+  background: linear-gradient(120deg, rgba(16, 185, 129, 0.15), rgba(22, 163, 74, 0.18));
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(99, 102, 241, 0.12);
+  border-bottom: 1px solid rgba(22, 163, 74, 0.2);
 }
 
 [data-theme="dark"] .farmer-form-header {
-  background: linear-gradient(120deg, rgba(16, 185, 129, 0.22), rgba(37, 99, 235, 0.2));
-  border-bottom-color: rgba(59, 130, 246, 0.16);
+  background: linear-gradient(120deg, rgba(16, 185, 129, 0.22), rgba(22, 163, 74, 0.25));
+  border-bottom-color: rgba(16, 185, 129, 0.25);
 }
 
 .farmer-form-header__content {
@@ -143,7 +148,7 @@
 }
 
 [data-theme="dark"] .farmer-form-close:hover {
-  background: rgba(30, 58, 138, 0.55);
+  background: rgba(4, 120, 87, 0.55);
 }
 
 .farmer-form-header__meta {
@@ -156,28 +161,28 @@
   letter-spacing: 0.32em;
   text-transform: uppercase;
   color: rgba(15, 118, 110, 0.65);
-  background: linear-gradient(90deg, rgba(59, 130, 246, 0.08), rgba(16, 185, 129, 0.08));
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.08), rgba(22, 163, 74, 0.1));
 }
 
 [data-theme="dark"] .farmer-form-header__meta {
-  color: rgba(165, 243, 252, 0.7);
-  background: linear-gradient(90deg, rgba(37, 99, 235, 0.18), rgba(16, 185, 129, 0.18));
+  color: rgba(167, 243, 208, 0.7);
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.18), rgba(22, 163, 74, 0.22));
 }
 
 .farmer-form-header__divider {
   flex: 1;
   height: 1px;
-  background: rgba(59, 130, 246, 0.25);
+  background: rgba(22, 163, 74, 0.25);
 }
 
 [data-theme="dark"] .farmer-form-header__divider {
-  background: rgba(56, 189, 248, 0.4);
+  background: rgba(16, 185, 129, 0.4);
 }
 
 .form-progress {
   display: flex;
   flex-direction: column;
-  padding: 0.75rem 1.25rem; /* reduce space around progress bar */
+  padding: 0.75rem 1.25rem;
   gap: 0.5rem;
   background: var(--form-surface);
   border-bottom: 1px solid rgba(148, 163, 184, 0.18);
@@ -201,7 +206,7 @@
   letter-spacing: 0.05em;
   color: var(--form-muted);
   background: rgba(15, 118, 110, 0.08);
-  border: 1px solid rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(22, 163, 74, 0.2);
   transition: all 0.25s ease;
 }
 
@@ -214,20 +219,20 @@
   border-radius: 999px;
   font-size: 0.7rem;
   font-weight: 700;
-  background: rgba(59, 130, 246, 0.12);
+  background: rgba(22, 163, 74, 0.15);
   color: inherit;
 }
 
 .form-progress__chip.is-active {
-  background: linear-gradient(120deg, rgba(59, 130, 246, 0.22), rgba(16, 185, 129, 0.28));
+  background: linear-gradient(120deg, rgba(16, 185, 129, 0.25), rgba(22, 163, 74, 0.28));
   color: #0f5132;
   border-color: rgba(16, 185, 129, 0.4);
-  box-shadow: 0 16px 35px -22px rgba(37, 99, 235, 0.55);
+  box-shadow: 0 16px 35px -22px rgba(16, 185, 129, 0.55);
 }
 
 [data-theme="dark"] .form-progress__chip.is-active {
   color: #bbf7d0;
-  border-color: rgba(56, 189, 248, 0.45);
+  border-color: rgba(16, 185, 129, 0.45);
 }
 
 .form-progress__chip.is-active .form-progress__number {
@@ -258,7 +263,7 @@
   height: 100%;
   border-radius: 999px;
   background: linear-gradient(90deg, var(--form-indigo), var(--form-sky), var(--form-green));
-  box-shadow: 0 16px 35px -25px rgba(37, 99, 235, 0.7);
+  box-shadow: 0 16px 35px -25px rgba(5, 150, 105, 0.7);
 }
 
 .farmer-form-body {
@@ -268,7 +273,6 @@
   gap: 1.25rem;
   display: flex;
   flex-direction: column;
-  /* gap: clamp(1.75rem, 1.5vw + 1.25rem, 2.5rem); */
   background: var(--form-background-muted);
 }
 
@@ -298,12 +302,12 @@
   gap: 1.25rem;
   border-radius: 24px;
   background: var(--form-surface-strong);
-  border: 1px solid rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(22, 163, 74, 0.2);
   box-shadow: 0 26px 52px -44px rgba(15, 23, 42, 0.65);
 }
 
 [data-theme="dark"] .form-card {
-  border-color: rgba(56, 189, 248, 0.14);
+  border-color: rgba(16, 185, 129, 0.18);
 }
 
 .form-section-title {
@@ -321,7 +325,7 @@
   width: 0.4rem;
   border-radius: 999px;
   background: linear-gradient(180deg, var(--form-indigo), var(--form-sky), var(--form-green));
-  box-shadow: 0 18px 36px -24px rgba(56, 189, 248, 0.55);
+  box-shadow: 0 18px 36px -24px rgba(16, 185, 129, 0.55);
 }
 
 .form-section-title h3 {
@@ -333,7 +337,7 @@
   width: 6rem;
   height: 3px;
   border-radius: 999px;
-  background: linear-gradient(90deg, rgba(59, 130, 246, 0.55), rgba(59, 130, 246, 0));
+  background: linear-gradient(90deg, rgba(22, 163, 74, 0.55), rgba(22, 163, 74, 0));
 }
 
 .form-grid {
@@ -372,7 +376,7 @@
   width: 100%;
   border-radius: 18px;
   padding: 0.95rem 1.1rem;
-  border: 1px solid rgba(148, 163, 184, 0.3);
+  border: 1px solid rgba(148, 184, 172, 0.3);
   background: rgba(255, 255, 255, 0.95);
   font-size: 0.95rem;
   color: var(--form-text);
@@ -381,12 +385,12 @@
 }
 
 .form-input::placeholder {
-  color: rgba(148, 163, 184, 0.8);
+  color: rgba(148, 184, 165, 0.8);
 }
 
 [data-theme="dark"] .form-input,
 [data-theme="dark"] .form-select {
-  background: rgba(15, 23, 42, 0.82);
+  background: rgba(15, 23, 20, 0.82); /* FIXED: Was dark blue, now dark green-gray */
   border-color: rgba(94, 234, 212, 0.2);
   color: #e2e8f0;
   box-shadow: 0 18px 40px -34px rgba(15, 118, 110, 0.55);
@@ -427,21 +431,21 @@
 }
 
 [data-theme="dark"] .form-select-icon {
-  color: rgba(165, 180, 252, 0.85);
+  color: rgba(134, 239, 172, 0.85);
 }
 
 .form-declaration {
   padding: 1.25rem 1.5rem;
   border-radius: 18px;
-  border: 1px dashed rgba(59, 130, 246, 0.28);
-  background: rgba(59, 130, 246, 0.08);
+  border: 1px dashed rgba(22, 163, 74, 0.3);
+  background: rgba(22, 163, 74, 0.1);
   color: var(--form-muted);
   font-size: 0.95rem;
   line-height: 1.6;
 }
 
 [data-theme="dark"] .form-declaration {
-  border-color: rgba(56, 189, 248, 0.35);
+  border-color: rgba(16, 185, 129, 0.35);
   background: rgba(15, 23, 42, 0.7);
   color: rgba(226, 232, 240, 0.85);
 }
@@ -471,7 +475,7 @@
 }
 
 .form-btn:focus-visible {
-  outline: 2px solid rgba(59, 130, 246, 0.45);
+  outline: 2px solid rgba(22, 163, 74, 0.45);
   outline-offset: 3px;
 }
 
@@ -490,16 +494,16 @@
 .form-btn--primary {
   background: linear-gradient(135deg, var(--form-indigo), var(--form-sky));
   color: #f8fafc;
-  box-shadow: 0 18px 35px -18px rgba(59, 130, 246, 0.55);
+  box-shadow: 0 18px 35px -18px rgba(5, 150, 105, 0.55);
 }
 
 .form-btn--primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 22px 45px -18px rgba(37, 99, 235, 0.58);
+  box-shadow: 0 22px 45px -18px rgba(4, 120, 87, 0.58);
 }
 
 .form-btn--success {
-  background: linear-gradient(135deg, #10b981, #2dd4bf, #38bdf8);
+  background: linear-gradient(135deg, #10b981, #2dd4bf, #6ee7b7);
   color: #022c22;
   box-shadow: 0 18px 38px -18px rgba(13, 148, 136, 0.55);
 }
@@ -520,7 +524,6 @@
   .farmer-form-header {
     flex-direction: column;
   }
-
   .farmer-form-header__meta {
     letter-spacing: 0.2em;
   }
@@ -532,25 +535,20 @@
     overflow-x: auto;
     padding-bottom: 0.5rem;
   }
-
   .form-progress__chips::-webkit-scrollbar {
     height: 0.35rem;
   }
-
   .form-progress__chips::-webkit-scrollbar-thumb {
     background: rgba(16, 185, 129, 0.35);
     border-radius: 999px;
   }
-
   .form-progress__chip {
     flex: 0 0 auto;
   }
-
   .farmer-form-footer {
     flex-direction: column-reverse;
     align-items: stretch;
   }
-
   .form-btn {
     width: 100%;
   }
@@ -560,15 +558,12 @@
   .farmer-form-modal {
     border-radius: 22px;
   }
-
   .form-grid--two {
     grid-template-columns: 1fr;
   }
-
   .form-grid--three {
     grid-template-columns: 1fr;
   }
-
   .farmer-form-header__badge {
     letter-spacing: 0.35em;
   }
