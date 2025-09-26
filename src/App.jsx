@@ -785,6 +785,7 @@ function App() {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              onClick={() => setIsActivityTrackerOpen(true)}
               className="text-green-700 px-7 py-4 rounded-full text-base md:text-lg font-semibold transition-all duration-300 cta-btn secondary-cta"
             >
               {TEXTS[lang].logActivity}
@@ -971,79 +972,6 @@ function App() {
           <p className="text-green-300 text-sm">{TEXTS[lang].footerNote}</p>
         </div>
       </footer>
-
-      {/* Weather Section */}
-      <section className="weather-section px-4 md:px-6">
-        <div className="container mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-10"
-          >
-            <h2 className="text-4xl md:text-5xl font-bold text-green-800 mb-4">
-              {weatherStrings.title}
-            </h2>
-            <p className="text-green-700">
-              {weatherStrings.subtitle}
-            </p>
-          </motion.div>
-
-          {isWeatherLoading ? (
-            <div className="weather-card weather-message">
-              {weatherStrings.loading}
-            </div>
-          ) : weatherError ? (
-            <div className="weather-card weather-message weather-message-error">
-              {weatherError || weatherStrings.error}
-            </div>
-          ) : weatherInfo ? (
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="weather-card"
-            >
-              <div className="weather-top">
-                <div className="weather-top-left">
-                  {conditionIcon && (
-                    <img
-                      src={conditionIcon}
-                      alt={conditionText || 'Weather icon'}
-                      className="weather-icon"
-                      loading="lazy"
-                    />
-                  )}
-                  <div>
-                    <p className="weather-location">{locationLabel || weatherStrings.location}</p>
-                    <p className="weather-condition">{conditionText || weatherStrings.condition}</p>
-                  </div>
-                </div>
-                <div className="weather-temp">
-                  <span className="weather-temp-value">{temperatureLabel}</span>
-                  <span className="weather-temp-label">{weatherStrings.temperature}</span>
-                </div>
-              </div>
-
-              <div className="weather-metrics">
-                {weatherMetrics.map(metric => (
-                  <div key={metric.label} className="weather-metric">
-                    <span className="metric-label">{metric.label}</span>
-                    <span className="metric-value">{metric.value}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="weather-meta">
-                <span>{weatherStrings.updated}: {weatherUpdated || '--'}</span>
-                {weatherIp && (
-                  <span>{weatherStrings.ipLabel}: {weatherIp}</span>
-                )}
-              </div>
-            </motion.div>
-          ) : null}
-        </div>
-      </section>
 
       {/* Chat Interface */}
       <AnimatePresence>
