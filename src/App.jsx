@@ -109,6 +109,7 @@ function interleaveChannels(audioBuffer) {
 }
 
 function App() {
+  const featuresSectionRef = useRef(null);
   // Language selection (ml | en)
   const getInitialLang = () => {
     try {
@@ -125,7 +126,7 @@ function App() {
     ml: {
       brand: 'കൃഷി സഖി',
       chatNow: 'Chat Now',
-      heroSubtitle: 'Kerala കർഷകർക്കായി വ്യക്തിഗതമാക്കിയ, സമയോചിതമായ കാർഷിക ഉപദേശം നൽകുന്ന ഡിജിറ്റൽ സുഹൃത്ത്',
+      heroSubtitle: 'Kerala കർഷകർക്കായി വ്യക്തിഗതമാക്കിയ, സമയോചിതമായ കാർഷിക ഉപദേശം നൽകുന്ന ഡിജിറ്റർ സുഹൃത്ത്',
       provideInfo: 'വിവരങ്ങൾ നൽകുക',
       logActivity: 'പ്രവർത്തനം രേഖപ്പെടുത്തുക',
       ctaPrimary: 'കൃഷി യാത്ര ആരംഭിക്കൂ',
@@ -278,6 +279,10 @@ function App() {
   useEffect(() => {
     messagesRef.current = messages
   }, [messages])
+
+  const handleLearnMoreClick = () => {
+    featuresSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+};
 
   const clearRecordingTimers = () => {
     if (recordingTimeoutRef.current) {
@@ -653,15 +658,16 @@ function App() {
             >
               {TEXTS[lang].provideInfo}
             </motion.button>
-            {/* New Button for Activity Tracker */}
+            
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => setIsActivityTrackerOpen(true)}
+              onClick={handleLearnMoreClick}
               className="text-green-700 px-7 py-4 rounded-full text-base md:text-lg font-semibold transition-all duration-300 cta-btn secondary-cta"
             >
-              {TEXTS[lang].logActivity}
+              {TEXTS[lang].ctaSecondary}
             </motion.button>
+
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -670,12 +676,15 @@ function App() {
             >
               {TEXTS[lang].ctaPrimary}
             </motion.button>
+
+          {/* New Button for Activity Tracker */}
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              onClick={() => setIsActivityTrackerOpen(true)}
               className="text-green-700 px-7 py-4 rounded-full text-base md:text-lg font-semibold transition-all duration-300 cta-btn secondary-cta"
             >
-              {TEXTS[lang].ctaSecondary}
+              {TEXTS[lang].logActivity}
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -707,7 +716,7 @@ function App() {
       </section>
 
       {/* Features Section */}
-  <section className="py-16 px-4 md:py-20 md:px-6">
+  <section ref={featuresSectionRef} className="py-16 px-4 md:py-20 md:px-6">
         <div className="container mx-auto">
           <motion.div 
             initial={{ opacity: 0, y: 50 }}
