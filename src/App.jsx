@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { MessageCircle, X, Send, Sprout, Users, TrendingUp, Brain, Shield, Clock, MapPin, Droplets, Bug, Maximize2, Minimize2, Mic, Square, Loader2 } from 'lucide-react'
+import { MessageCircle, X, Send, Sprout, Users, TrendingUp, Brain, Shield, Clock, MapPin, Droplets, Bug, Maximize2, Minimize2, Mic, Square, Loader2, Volume2, VolumeX } from 'lucide-react'
 import './App.css'
-import { sendChat, sendLocalChat } from './lib/chat'
+import { sendChat, sendLocalChat, fetchTextToSpeech } from './lib/chat'
 import { fetchWeatherForClient } from './lib/weather'
 import { transcribeAudio } from './lib/speech'
 import FarmerInfoForm from './FarmerInfoForm'
@@ -12,6 +12,7 @@ import ActivityTracker from './ActivityTracker.jsx';
 
 const MAX_RECORDING_SECONDS = 10
 const RECORDING_MIME_TYPE = 'audio/webm;codecs=opus'
+const DEFAULT_TTS_FORMAT = 'riff-24khz-16bit-mono-pcm'
 
 async function convertBlobToWav(blob, audioContextRef) {
   const arrayBuffer = await blob.arrayBuffer()
@@ -120,7 +121,8 @@ function App() {
     }
   }
   const [lang, setLang] = useState(getInitialLang())
-  const locale = lang === 'ml' ? 'ml-IN' : 'en-US'
+  const getLocaleForLang = (lng) => (lng === 'ml' ? 'ml-IN' : 'en-US')
+  const locale = getLocaleForLang(lang)
 
   const TEXTS = {
     ml: {
@@ -233,7 +235,7 @@ function App() {
   const [isActivityTrackerOpen, setIsActivityTrackerOpen] = useState(false) // New state
   const [isFullScreen, setIsFullScreen] = useState(false)
   const [chatMode, setChatMode] = useState('cloud')
-  const defaultMessages = (lng) => ([{ id: 1, text: TEXTS[lng].greeting, sender: 'bot' }])
+  const defaultMessages = (lng) => ([{ id: 1, text: TEXTS[lng].greeting, sender: 'bot', voiceLocale: getLocaleForLang(lng) }])
   const getHistoryKey = (mode) => (mode === 'local' ? 'pfa_chat_history_local' : 'pfa_chat_history')
   const loadHistory = (mode, lng = lang) => {
     try {
@@ -241,7 +243,18 @@ function App() {
       const stored = localStorage.getItem(getHistoryKey(mode))
       if (stored) {
         const parsed = JSON.parse(stored)
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((msg, index) => {
+            const safeId = typeof msg.id === 'number' || typeof msg.id === 'string'
+              ? msg.id
+              : Date.now() + index
+            return {
+              ...msg,
+              id: safeId,
+              voiceLocale: msg.voiceLocale || getLocaleForLang(lng)
+            }
+          })
+        }
       }
     } catch {}
     return defaultMessages(lng)
@@ -256,6 +269,8 @@ function App() {
   const [weatherIp, setWeatherIp] = useState('auto:ip')
   const [weatherError, setWeatherError] = useState(null)
   const [isWeatherLoading, setIsWeatherLoading] = useState(true)
+  const [playingMessageId, setPlayingMessageId] = useState(null)
+  const [ttsLoadingId, setTtsLoadingId] = useState(null)
   // Theme (dark | light), default dark
   const getInitialTheme = () => {
     try {
@@ -274,16 +289,94 @@ function App() {
   const recordingStartRef = useRef(0)
   const recordingMimeTypeRef = useRef(RECORDING_MIME_TYPE)
   const audioContextRef = useRef(null)
+  const audioCacheRef = useRef(new Map())
+  const currentAudioRef = useRef(null)
   const messagesRef = useRef(messages)
 
   useEffect(() => {
     messagesRef.current = messages
   }, [messages])
 
+  const stopCurrentAudio = (options = { updateState: true }) => {
+    const audio = currentAudioRef.current
+    if (audio) {
+      try {
+        audio.pause()
+        audio.currentTime = 0
+      } catch (err) {
+        console.warn('Failed to stop audio playback', err)
+      }
+      currentAudioRef.current = null
+    }
+    if (options.updateState) {
+      setPlayingMessageId(null)
+    }
+  }
+
+  const handlePlayMessageAudio = async (message) => {
+    const rawText = message?.text
+    const text = typeof rawText === 'string' ? rawText.trim() : ''
+    if (!text) return
+
+    const messageLocale = message?.voiceLocale || locale
+    const isMalayalam = String(messageLocale).toLowerCase().startsWith('ml')
+    const errorCopy = isMalayalam
+      ? 'ക്ഷമിക്കണം, ഇപ്പോൾ ശബ്ദം പ്ലേ ചെയ്യാൻ കഴിഞ്ഞില്ല.'
+      : 'Sorry, we couldn’t play that audio just now.'
+    const voiceEnv = isMalayalam ? import.meta.env.VITE_TTS_VOICE_ML : import.meta.env.VITE_TTS_VOICE_EN
+    const voiceName = typeof voiceEnv === 'string' && voiceEnv.trim().length > 0 ? voiceEnv.trim() : undefined
+
+    if (playingMessageId === message.id) {
+      stopCurrentAudio()
+      return
+    }
+
+    stopCurrentAudio()
+    setTtsLoadingId(message.id)
+
+    try {
+      let audioUrl = audioCacheRef.current.get(message.id)
+      if (!audioUrl) {
+        audioUrl = await fetchTextToSpeech(text, {
+          lang: messageLocale,
+          voice: voiceName,
+          format: DEFAULT_TTS_FORMAT
+        })
+        audioCacheRef.current.set(message.id, audioUrl)
+      }
+
+      const audio = new Audio(audioUrl)
+      currentAudioRef.current = audio
+      setPlayingMessageId(message.id)
+
+      const handleError = () => {
+        stopCurrentAudio()
+        setMessages(prev => [...prev, { id: Date.now(), text: errorCopy, sender: 'bot', voiceLocale: messageLocale }])
+        audio.removeEventListener('ended', handleEnd)
+        audio.removeEventListener('error', handleError)
+      }
+
+      const handleEnd = () => {
+        stopCurrentAudio()
+        audio.removeEventListener('ended', handleEnd)
+        audio.removeEventListener('error', handleError)
+      }
+
+      audio.addEventListener('ended', handleEnd)
+      audio.addEventListener('error', handleError)
+
+      await audio.play()
+    } catch (error) {
+      console.error('TTS playback failed:', error)
+      stopCurrentAudio()
+      setMessages(prev => [...prev, { id: Date.now(), text: errorCopy, sender: 'bot', voiceLocale: messageLocale }])
+    } finally {
+      setTtsLoadingId(prev => (prev === message.id ? null : prev))
+    }
+  }
   const handleLearnMoreClick = () => {
     featuresSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
 };
-
   const clearRecordingTimers = () => {
     if (recordingTimeoutRef.current) {
       clearTimeout(recordingTimeoutRef.current)
@@ -350,7 +443,7 @@ function App() {
       await handleSendMessage(transcription)
     } catch (error) {
       console.error('Voice transcription failed:', error)
-      setMessages(prev => [...prev, { id: Date.now(), text: 'Sorry, I could not understand that voice message.', sender: 'bot' }])
+      setMessages(prev => [...prev, { id: Date.now(), text: 'Sorry, I could not understand that voice message.', sender: 'bot', voiceLocale: locale }])
     } finally {
       setIsVoiceProcessing(false)
     }
@@ -359,7 +452,7 @@ function App() {
   const startRecording = async () => {
     if (isRecording || isVoiceProcessing) return
     if (!navigator.mediaDevices?.getUserMedia) {
-      setMessages(prev => [...prev, { id: Date.now(), text: 'Voice input is not supported in this browser.', sender: 'bot' }])
+      setMessages(prev => [...prev, { id: Date.now(), text: 'Voice input is not supported in this browser.', sender: 'bot', voiceLocale: locale }])
       return
     }
 
@@ -405,7 +498,7 @@ function App() {
       const message = error?.name === 'NotAllowedError'
         ? 'Microphone access was denied. Please enable it to record voice messages.'
         : 'Unable to access the microphone.'
-      setMessages(prev => [...prev, { id: Date.now(), text: message, sender: 'bot' }])
+      setMessages(prev => [...prev, { id: Date.now(), text: message, sender: 'bot', voiceLocale: locale }])
     }
   }
 
@@ -413,6 +506,11 @@ function App() {
     return () => {
       clearRecordingTimers()
       stopMediaStream()
+      stopCurrentAudio({ updateState: false })
+      audioCacheRef.current.forEach(url => {
+        try { URL.revokeObjectURL(url) } catch {}
+      })
+      audioCacheRef.current.clear()
       if (audioContextRef.current) {
         const ctx = audioContextRef.current
         audioContextRef.current = null
@@ -421,65 +519,71 @@ function App() {
     }
   }, [])
 
-    // Persist language and update default greeting only for a fresh session
-    useEffect(() => {
-      try { localStorage.setItem('pfa_lang', lang) } catch {}
-    }, [lang])
+  // Persist language and update default greeting only for a fresh session
+  useEffect(() => {
+    try { localStorage.setItem('pfa_lang', lang) } catch {}
+  }, [lang])
 
-    // Apply theme to document and persist
-    useEffect(() => {
-      try { localStorage.setItem('pfa_theme', theme) } catch {}
-      document.documentElement.setAttribute('data-theme', theme)
-    }, [theme])
+  // Apply theme to document and persist
+  useEffect(() => {
+    try { localStorage.setItem('pfa_theme', theme) } catch {}
+    document.documentElement.setAttribute('data-theme', theme)
+  }, [theme])
 
-    // Persist on change
-    useEffect(() => {
-      try { localStorage.setItem(getHistoryKey(chatMode), JSON.stringify(messages)) } catch {}
-    }, [messages, chatMode])
+  // Persist on change
+  useEffect(() => {
+    try { localStorage.setItem(getHistoryKey(chatMode), JSON.stringify(messages)) } catch {}
+  }, [messages, chatMode])
 
-    // Lock body scroll when a modal is open
-    useEffect(() => {
-      const body = document.body
-      const aModalIsOpen = isChatOpen || isFarmerFormOpen || isActivityTrackerOpen;
-      if (aModalIsOpen) {
-        const prev = body.style.overflow
-        body.dataset.prevOverflow = prev
-        body.style.overflow = 'hidden'
-        return () => {
-          body.style.overflow = body.dataset.prevOverflow || ''
-          delete body.dataset.prevOverflow
-        }
-      }
-      return () => {}
-    }, [isChatOpen, isFarmerFormOpen, isActivityTrackerOpen])
-
-    useEffect(() => {
-      let cancelled = false
-      async function loadWeather() {
-        setIsWeatherLoading(true)
-        try {
-          const { data, ip } = await fetchWeatherForClient()
-          if (!cancelled) {
-            setWeatherInfo(data)
-            setWeatherIp(ip)
-            setWeatherError(null)
-          }
-        } catch (error) {
-          if (!cancelled) {
-            setWeatherError(error?.message || 'Weather unavailable')
-            setWeatherInfo(null)
-          }
-        } finally {
-          if (!cancelled) setIsWeatherLoading(false)
-        }
-      }
-      loadWeather()
+  // Lock body scroll when chat is open
+  useEffect(() => {
+    const body = document.body
+    if (isChatOpen) {
+      const prev = body.style.overflow
+      body.dataset.prevOverflow = prev
+      body.style.overflow = 'hidden'
       return () => {
-        cancelled = true
+        body.style.overflow = body.dataset.prevOverflow || ''
+        delete body.dataset.prevOverflow
       }
-    }, [locale])
+    }
+    return () => {}
+  }, [isChatOpen])
+
+  useEffect(() => {
+    if (!isChatOpen) {
+      stopCurrentAudio()
+    }
+  }, [isChatOpen])
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadWeather() {
+      setIsWeatherLoading(true)
+      try {
+        const { data, ip } = await fetchWeatherForClient()
+        if (!cancelled) {
+          setWeatherInfo(data)
+          setWeatherIp(ip)
+          setWeatherError(null)
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setWeatherError(error?.message || 'Weather unavailable')
+          setWeatherInfo(null)
+        }
+      } finally {
+        if (!cancelled) setIsWeatherLoading(false)
+      }
+    }
+    loadWeather()
+    return () => {
+      cancelled = true
+    }
+  }, [locale])
 
   const openChat = (mode = 'cloud') => {
+    stopCurrentAudio()
     setChatMode(mode)
     setMessages(loadHistory(mode))
     setInputMessage('')
@@ -492,7 +596,7 @@ function App() {
     const text = source.trim()
     if (!text) return
 
-    const userMsg = { id: Date.now(), text, sender: 'user' }
+  const userMsg = { id: Date.now(), text, sender: 'user', voiceLocale: locale }
     setMessages(prev => [...prev, userMsg])
     if (typeof overrideText !== 'string') {
       setInputMessage('')
@@ -505,9 +609,9 @@ function App() {
       const trimmed = history.slice(-24) // messages are single turns, 24 ~ 12 exchanges
       const sendFn = chatMode === 'local' ? sendLocalChat : sendChat
       const { reply } = await sendFn(trimmed, { locale })
-      setMessages(prev => [...prev, { id: Date.now() + 1, text: reply, sender: 'bot' }])
+      setMessages(prev => [...prev, { id: Date.now() + 1, text: reply, sender: 'bot', voiceLocale: locale }])
     } catch (e) {
-      setMessages(prev => [...prev, { id: Date.now() + 2, text: TEXTS[lang].error, sender: 'bot' }])
+      setMessages(prev => [...prev, { id: Date.now() + 2, text: TEXTS[lang].error, sender: 'bot', voiceLocale: locale }])
     } finally {
       setIsTyping(false)
     }
@@ -681,7 +785,6 @@ function App() {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => setIsActivityTrackerOpen(true)}
               className="text-green-700 px-7 py-4 rounded-full text-base md:text-lg font-semibold transition-all duration-300 cta-btn secondary-cta"
             >
               {TEXTS[lang].logActivity}
@@ -869,6 +972,79 @@ function App() {
         </div>
       </footer>
 
+      {/* Weather Section */}
+      <section className="weather-section px-4 md:px-6">
+        <div className="container mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-center mb-10"
+          >
+            <h2 className="text-4xl md:text-5xl font-bold text-green-800 mb-4">
+              {weatherStrings.title}
+            </h2>
+            <p className="text-green-700">
+              {weatherStrings.subtitle}
+            </p>
+          </motion.div>
+
+          {isWeatherLoading ? (
+            <div className="weather-card weather-message">
+              {weatherStrings.loading}
+            </div>
+          ) : weatherError ? (
+            <div className="weather-card weather-message weather-message-error">
+              {weatherError || weatherStrings.error}
+            </div>
+          ) : weatherInfo ? (
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="weather-card"
+            >
+              <div className="weather-top">
+                <div className="weather-top-left">
+                  {conditionIcon && (
+                    <img
+                      src={conditionIcon}
+                      alt={conditionText || 'Weather icon'}
+                      className="weather-icon"
+                      loading="lazy"
+                    />
+                  )}
+                  <div>
+                    <p className="weather-location">{locationLabel || weatherStrings.location}</p>
+                    <p className="weather-condition">{conditionText || weatherStrings.condition}</p>
+                  </div>
+                </div>
+                <div className="weather-temp">
+                  <span className="weather-temp-value">{temperatureLabel}</span>
+                  <span className="weather-temp-label">{weatherStrings.temperature}</span>
+                </div>
+              </div>
+
+              <div className="weather-metrics">
+                {weatherMetrics.map(metric => (
+                  <div key={metric.label} className="weather-metric">
+                    <span className="metric-label">{metric.label}</span>
+                    <span className="metric-value">{metric.value}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="weather-meta">
+                <span>{weatherStrings.updated}: {weatherUpdated || '--'}</span>
+                {weatherIp && (
+                  <span>{weatherStrings.ipLabel}: {weatherIp}</span>
+                )}
+              </div>
+            </motion.div>
+          ) : null}
+        </div>
+      </section>
+
       {/* Chat Interface */}
       <AnimatePresence>
         {isChatOpen && (
@@ -918,30 +1094,55 @@ function App() {
 
               {/* Chat Messages */}
               <div className="flex-1 p-6 overflow-y-auto space-y-4 chat-messages">
-                {messages.map((message) => (
-                  <motion.div
-                    key={message.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={`message-row ${message.sender === 'user' ? 'from-user' : 'from-bot'}`}
-                  >
-                    {message.sender !== 'user' && (
-                      <div className="avatar bot">
-                        <Sprout className="w-5 h-5" />
-                      </div>
-                    )}
-                    <div
-                      className={`bubble ${
-                        message.sender === 'user' ? 'user-bubble' : 'bot-bubble'
-                      }`}
+                {messages.map((message) => {
+                  const messageLocale = message?.voiceLocale || locale
+                  const isMalayalam = String(messageLocale).toLowerCase().startsWith('ml')
+                  const isLoading = ttsLoadingId === message.id
+                  const isPlaying = playingMessageId === message.id
+                  const playLabel = isMalayalam ? 'ശബ്ദം പ്ലേ ചെയ്യുക' : 'Play audio'
+                  const stopLabel = isMalayalam ? 'ശബ്ദം നിർത്തുക' : 'Stop audio'
+
+                  return (
+                    <motion.div
+                      key={message.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`message-row ${message.sender === 'user' ? 'from-user' : 'from-bot'}`}
                     >
-                      {message.text}
-                    </div>
-                    {message.sender === 'user' && (
-                      <div className="avatar user">🧑‍🌾</div>
-                    )}
-                  </motion.div>
-                ))}
+                      {message.sender !== 'user' && (
+                        <div className="avatar bot">
+                          <Sprout className="w-5 h-5" />
+                        </div>
+                      )}
+                      <div
+                        className={`bubble ${
+                          message.sender === 'user' ? 'user-bubble' : 'bot-bubble'
+                        }`}
+                      >
+                        <div className="bubble__text">{message.text}</div>
+                        <button
+                          type="button"
+                          className="bubble__tts-btn"
+                          onClick={() => handlePlayMessageAudio(message)}
+                          aria-label={isPlaying ? stopLabel : playLabel}
+                          title={isPlaying ? stopLabel : playLabel}
+                          disabled={isLoading}
+                        >
+                          {isLoading ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : isPlaying ? (
+                            <VolumeX className="w-4 h-4" />
+                          ) : (
+                            <Volume2 className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
+                      {message.sender === 'user' && (
+                        <div className="avatar user">🧑‍🌾</div>
+                      )}
+                    </motion.div>
+                  )
+                })}
                 {isTyping && (
                   <div className="message-row from-bot">
                     <div className="avatar bot"><Sprout className="w-5 h-5" /></div>

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
+import { X, Volume2 } from 'lucide-react';
 import './FarmerInfoForm.css';
 
 const SectionTitle = ({ children }) => (
@@ -16,6 +16,65 @@ const FormCard = ({ children }) => (
     {children}
   </div>
 );
+
+const AUDIO_BASE_PATH = `${import.meta.env.BASE_URL}assets/audio/`;
+
+let activeFieldAudio = null;
+
+const playFieldAudio = (fileName) => {
+  if (!fileName) return;
+
+  if (activeFieldAudio) {
+    activeFieldAudio.pause();
+    activeFieldAudio.currentTime = 0;
+  }
+
+  try {
+    const audio = new Audio(`${AUDIO_BASE_PATH}${fileName}`);
+    activeFieldAudio = audio;
+    audio.play().catch((error) => {
+      console.error(`Audio playback failed for ${fileName}`, error);
+      activeFieldAudio = null;
+    });
+  } catch (error) {
+    console.error(`Audio element could not be created for ${fileName}`, error);
+  }
+};
+
+const LabelWithAudio = ({ htmlFor, label, audioKey }) => {
+  const baseKey = audioKey || htmlFor;
+
+  const handlePlay = (variant) => {
+    const suffix = variant === 'ml' ? '_malyalamm' : '';
+    playFieldAudio(`${baseKey}${suffix}.wav`);
+  };
+
+  return (
+    <div className="form-label-wrapper">
+      <label htmlFor={htmlFor} className="form-label">{label}</label>
+      <div className="form-label-audio">
+        <button
+          type="button"
+          className="form-label-audio__button"
+          onClick={() => handlePlay('en')}
+          aria-label={`Play ${label} in English`}
+        >
+          <Volume2 className="form-label-audio__icon" aria-hidden="true" />
+          <span className="form-label-audio__lang">EN</span>
+        </button>
+        <button
+          type="button"
+          className="form-label-audio__button"
+          onClick={() => handlePlay('ml')}
+          aria-label={`Play ${label} in Malayalam`}
+        >
+          <Volume2 className="form-label-audio__icon" aria-hidden="true" />
+          <span className="form-label-audio__lang">ML</span>
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const FarmerInfoForm = ({ isOpen, onClose, language }) => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -357,11 +416,12 @@ useEffect(() => {
   );
 };
 
-const InputField = ({ name, label, className = '', ...props }) => {
+const InputField = ({ name, label, audioKey, className = '', ...props }) => {
   const wrapperClass = ['form-field', className].filter(Boolean).join(' ');
+  const fieldAudioKey = audioKey || name;
   return (
     <div className={wrapperClass}>
-      <label htmlFor={name} className="form-label">{label}</label>
+      <LabelWithAudio htmlFor={name} label={label} audioKey={fieldAudioKey} />
       <input
         id={name}
         name={name}
@@ -372,11 +432,12 @@ const InputField = ({ name, label, className = '', ...props }) => {
   );
 };
 
-const TextareaField = ({ name, label, className = '', ...props }) => {
+const TextareaField = ({ name, label, audioKey, className = '', ...props }) => {
   const wrapperClass = ['form-field', className].filter(Boolean).join(' ');
+  const fieldAudioKey = audioKey || name;
   return (
     <div className={wrapperClass}>
-      <label htmlFor={name} className="form-label">{label}</label>
+      <LabelWithAudio htmlFor={name} label={label} audioKey={fieldAudioKey} />
       <textarea
         id={name}
         name={name}
@@ -388,11 +449,12 @@ const TextareaField = ({ name, label, className = '', ...props }) => {
   );
 };
 
-const SelectField = ({ name, label, options, className = '', ...props }) => {
+const SelectField = ({ name, label, options, audioKey, className = '', ...props }) => {
   const wrapperClass = ['form-field', className].filter(Boolean).join(' ');
+  const fieldAudioKey = audioKey || name;
   return (
     <div className={wrapperClass}>
-      <label htmlFor={name} className="form-label">{label}</label>
+      <LabelWithAudio htmlFor={name} label={label} audioKey={fieldAudioKey} />
       <div className="form-select-wrapper">
         <select
           id={name}

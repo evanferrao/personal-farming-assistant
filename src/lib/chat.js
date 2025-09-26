@@ -30,3 +30,17 @@ export async function sendChat(messages, { locale = 'ml-IN', endpoint = '/api/ch
 export function sendLocalChat(messages, options = {}) {
   return sendChat(messages, { ...options, endpoint: '/api/localchat' });
 }
+
+export async function fetchTextToSpeech(text, { voice, lang, format } = {}) {
+  const resp = await fetch(`${API_BASE}/api/texttospeech`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, voice, lang, format })
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.error || 'Text to speech request failed');
+  }
+  const blob = await resp.blob();
+  return URL.createObjectURL(blob);
+}

@@ -8,6 +8,64 @@ export default {
     }
 
     const url = new URL(request.url)
+
+    if (url.pathname === '/api/texttospeech' && request.method === 'POST') {
+      try {
+        const { text, voice, lang, format } = await request.json()
+        if (!text || typeof text !== 'string') {
+          return json({ error: 'text is required' }, 400)
+        }
+        const AZURE_TTS_KEY = env.AZURE_TTS_KEY
+        const AZURE_TTS_REGION = env.AZURE_TTS_REGION
+        const AZURE_TTS_VOICE = env.AZURE_TTS_VOICE
+        if (!AZURE_TTS_KEY || !AZURE_TTS_REGION) {
+          return json({ error: 'Azure TTS not configured' }, 500)
+        }
+        const ttsVoice = voice || AZURE_TTS_VOICE
+        const ttsLang = lang || 'en-US'
+        if (!ttsVoice) {
+          return json({ error: 'Azure TTS voice not configured' }, 500)
+        }
+        const endpoint = `https://${AZURE_TTS_REGION}.tts.speech.microsoft.com/cognitiveservices/v1`
+        const sanitiseForSsml = (value = '') => String(value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&apos;')
+          .replace(/\r?\n/g, '<break time="400ms"/>')
+        const safeText = sanitiseForSsml(text)
+        const ssml = `<?xml version='1.0' encoding='utf-8'?>\n<speak version='1.0' xml:lang='${ttsLang}'>\n  <voice xml:lang='${ttsLang}' xml:gender='Female' name='${ttsVoice}'>\n    ${safeText}\n  </voice>\n</speak>`
+        const outputFormat = typeof format === 'string' && format.trim()
+          ? format.trim()
+          : 'riff-16khz-16bit-mono-pcm'
+        const ttsResp = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Ocp-Apim-Subscription-Key': AZURE_TTS_KEY,
+            'Content-Type': 'application/ssml+xml',
+            'X-Microsoft-OutputFormat': outputFormat,
+            'User-Agent': 'favourite-farmer-app'
+          },
+          body: ssml
+        })
+        if (!ttsResp.ok) {
+          const err = await ttsResp.text()
+          return json({ error: err }, ttsResp.status)
+        }
+        const audio = await ttsResp.arrayBuffer()
+        return new Response(audio, {
+          status: 200,
+          headers: {
+            'Content-Type': 'audio/wav',
+            'Content-Disposition': 'inline; filename="tts.wav"',
+            ...corsHeaders()
+          }
+        })
+      } catch (err) {
+        return json({ error: 'Failed to synthesize speech' }, 500)
+      }
+    }
     if (url.pathname === '/api/health') {
       return json({ ok: true })
     }

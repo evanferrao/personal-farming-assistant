@@ -38,6 +38,80 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 }
 });
 
+const AZURE_TTS_KEY = process.env.AZURE_TTS_KEY;
+const AZURE_TTS_REGION = process.env.AZURE_TTS_REGION;
+const AZURE_TTS_VOICE = process.env.AZURE_TTS_VOICE;
+
+if (!AZURE_TTS_KEY || !AZURE_TTS_REGION || !AZURE_TTS_VOICE) {
+  console.warn('[WARN] Azure TTS env vars not set. /api/texttospeech will return 500 until configured.');
+}
+
+const sanitiseForSsml = (value = '') => String(value)
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&apos;')
+  .replace(/\r?\n/g, '<break time="400ms"/>');
+
+/* ---------------- Azure Text to Speech endpoint ---------------- */
+app.post('/api/texttospeech', async (req, res) => {
+  try {
+    const { text, voice, lang, format } = req.body || {};
+    if (!text || typeof text !== 'string') {
+      return res.status(400).json({ error: 'text is required' });
+    }
+    if (!AZURE_TTS_KEY || !AZURE_TTS_REGION) {
+      return res.status(500).json({ error: 'Azure TTS not configured' });
+    }
+    const ttsVoice = voice || AZURE_TTS_VOICE;
+    const ttsLang = lang || 'en-US';
+    if (!ttsVoice) {
+      return res.status(500).json({ error: 'Azure TTS voice not configured' });
+    }
+
+    // <-- FIXED endpoint
+    const endpoint = `https://${AZURE_TTS_REGION}.tts.speech.microsoft.com/cognitiveservices/v1`;
+
+    const safeText = sanitiseForSsml(text);
+    const ssml = `<?xml version='1.0' encoding='utf-8'?>
+<speak version='1.0' xml:lang='${ttsLang}'>
+  <voice xml:lang='${ttsLang}' xml:gender='Female' name='${ttsVoice}'>
+    ${safeText}
+  </voice>
+</speak>`;
+    const outputFormat = typeof format === 'string' && format.trim()
+      ? format.trim()
+      : 'riff-16khz-16bit-mono-pcm';
+
+    const ttsResp = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Ocp-Apim-Subscription-Key': AZURE_TTS_KEY,
+        'Content-Type': 'application/ssml+xml',
+        'X-Microsoft-OutputFormat': outputFormat,
+        'User-Agent': 'favourite-farmer-app'
+      },
+      body: ssml
+    });
+
+    if (!ttsResp.ok) {
+      const err = await ttsResp.text();
+      return res.status(ttsResp.status).json({ error: err });
+    }
+
+    res.set({
+      'Content-Type': 'audio/wav',
+      'Content-Disposition': 'inline; filename="tts.wav"'
+    });
+    ttsResp.body.pipe(res);
+  } catch (err) {
+    console.error('Azure TTS error:', err);
+    return res.status(500).json({ error: 'Failed to synthesize speech' });
+  }
+});
+
+
 const SYSTEM_PROMPT = process.env.SYSTEM_PROMPT || '';
 
 /* ---------------- Existing Online API chat ---------------- */
