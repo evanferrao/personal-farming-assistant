@@ -110,49 +110,49 @@ const FarmerInfoForm = ({ isOpen, onClose, language }) => {
         declaration: "I hereby declare that the information provided is true to the best of my knowledge."
       }
     },
-  ml: {
-    title: "കർഷക വിവര ഫോം",
-    subtitle: "വ്യക്തിഗത ഉപദേശത്തിനായി നിങ്ങളുടെ പ്രൊഫൈൽ പൂർത്തിയാക്കുക.",
-        steps: ["വ്യക്തിഗത വിവരങ്ങൾ", "ഫാം വിശദാംശങ്ങൾ", "കാർഷിക വിവരങ്ങൾ", "സാമ്പത്തികവും വിപണി വിശദാംശങ്ങളും", "സാങ്കേതികവിദ്യയും പിന്തുണയും", "പ്രഖ്യാപനം"],
-        buttons: {
-            next: "അടുത്തത്",
-            previous: "മുമ്പത്തേത്",
-            submit: "ഫോം സമർപ്പിക്കുക"
-        },
-        labels: {
-            fullName: "മുഴുവൻ പേര്",
-            fatherSpouseName: "അച്ഛന്റെ / പങ്കാളിയുടെ പേര്",
-            gender: "ലിംഗം",
-            dob: "ജനന തീയതി / പ്രായം",
-            contactNumber: "ബന്ധപ്പെടാനുള്ള നമ്പർ",
-            email: "ഇമെയിൽ (ലഭ്യമെങ്കിൽ)",
-            aadhaar: "ആധാർ / ഐഡി പ്രൂഫ് നമ്പർ",
-            address: "വിലാസം (ഗ്രാമം, പോസ്റ്റ് ഓഫീസ്, ജില്ല, സംസ്ഥാനം, പിൻ കോഡ്)",
-            landholding: "ആകെ ഭൂമി (ഏക്കറിൽ/ഹെക്ടറിൽ)",
-            ownershipType: "ഉടമസ്ഥാവകാശ തരം (സ്വന്തം / പാട്ടത്തിന് / പങ്കാളിത്തം)",
-            irrigationSource: "ജലസേചന ഉറവിടം (കനാൽ, കിണർ, മഴ, ഡ്രിപ്പ് മുതലായവ)",
-            soilType: "മണ്ണിന്റെ തരം (കറുപ്പ്, ചുവപ്പ്, മണൽ, എക്കൽ മുതലായവ)",
-            farmLocation: "ഫാം സ്ഥാനം (ജിപിഎസ് / സർവേ നമ്പർ ആവശ്യമെങ്കിൽ)",
-            primaryCrops: "പ്രധാനമായും കൃഷി ചെയ്യുന്ന വിളകൾ (നെല്ല്, ഗോതമ്പ്, ചോളം മുതലായവ)",
-            seasonalCrops: "കാലാനുസൃതമായ വിളകൾ (ഖാരിഫ് / റാബി / സെയ്ദ്)",
-            averageYield: "ഓരോ സീസണിലെയും ശരാശരി വിളവ്",
-            farmingType: "കൃഷി രീതി (പരമ്പരാഗതം / ജൈവ / മിശ്രിതം)",
-            livestock: "കന്നുകാലികളുടെ വിശദാംശങ്ങൾ (ഉണ്ടെങ്കിൽ - പശു, എരുമ, ആട്, കോഴി മുതലായവ)",
-            bankAccount: "ബാങ്ക് അക്കൗണ്ട് വിശദാംശങ്ങൾ (അക്കൗണ്ട് നമ്പർ, IFSC, ബാങ്കിന്റെ പേര്)",
-            paymentMode: "ഇഷ്ടപ്പെട്ട പണമടയ്ക്കൽ രീതി (ബാങ്ക് ട്രാൻസ്ഫർ / പണം)",
-            govtSchemes: "സർക്കാർ പദ്ധതികളിലേക്കുള്ള പ്രവേശനം (ഉണ്ട്/ഇല്ല; ഉണ്ടെങ്കിൽ, ഏതെല്ലാം)",
-            marketChannels: "നിലവിലെ വിപണന മാർഗ്ഗങ്ങൾ (മണ്ടികൾ, ഇടനിലക്കാർ, നേരിട്ടുള്ള വിൽപ്പന, ഓൺലൈൻ പ്ലാറ്റ്‌ഫോമുകൾ)",
-            smartphoneAccess: "സ്മാർട്ട്ഫോൺ / ഇന്റർനെറ്റ് ലഭ്യത (ഉണ്ട്/ഇല്ല)",
-            modernEquipment: "ആധുനിക ഉപകരണങ്ങളുടെ ഉപയോഗം (ട്രാക്ടർ, ഹാർവെസ്റ്റർ, ഡ്രോൺ മുതലായവ)",
-            trainingNeeds: "പരിശീലനത്തിനോ പിന്തുണയ്‌ക്കോ ഉള്ള ആവശ്യം (ഉണ്ട്/ഇല്ല; ജലസേചനം, വളം, കീടനാശിനി, വിപണനം, ഡിജിറ്റൽ ആപ്പുകൾ എന്നിവയിൽ വ്യക്തമാക്കുക)",
-            signature: "കർഷകന്റെ ഒപ്പ് / തള്ളവിരലടയാളം",
-            date: "തീയതി",
-            place: "സ്ഥലം",
-            declaration: "നൽകിയിട്ടുള്ള വിവരങ്ങൾ എന്റെ അറിവിൽ ശരിയാണെന്ന് ഞാൻ ഇതിനാൽ പ്രഖ്യാപിക്കുന്നു."
-        }
+    ml: {
+      title: "കർഷക വിവര ഫോം",
+      subtitle: "വ്യക്തിഗത ഉപദേശത്തിനായി നിങ്ങളുടെ പ്രൊഫൈൽ പൂർത്തിയാക്കുക.",
+      steps: ["വ്യക്തിഗത വിവരങ്ങൾ", "ഫാം വിശദാംശങ്ങൾ", "കാർഷിക വിവരങ്ങൾ", "സാമ്പത്തികവും വിപണി വിശദാംശങ്ങളും", "സാങ്കേതികവിദ്യയും പിന്തുണയും", "പ്രഖ്യാപനം"],
+      buttons: {
+        next: "അടുത്തത്",
+        previous: "മുമ്പത്തേത്",
+        submit: "ഫോം സമർപ്പിക്കുക"
+      },
+      labels: {
+        fullName: "മുഴുവൻ പേര്",
+        fatherSpouseName: "അച്ഛന്റെ / പങ്കാളിയുടെ പേര്",
+        gender: "ലിംഗം",
+        dob: "ജനന തീയതി / പ്രായം",
+        contactNumber: "ബന്ധപ്പെടാനുള്ള നമ്പർ",
+        email: "ഇമെയിൽ (ലഭ്യമെങ്കിൽ)",
+        aadhaar: "ആധാർ / ഐഡി പ്രൂഫ് നമ്പർ",
+        address: "വിലാസം (ഗ്രാമം, പോസ്റ്റ് ഓഫീസ്, ജില്ല, സംസ്ഥാനം, പിൻ കോഡ്)",
+        landholding: "ആകെ ഭൂമി (ഏക്കറിൽ/ഹെക്ടറിൽ)",
+        ownershipType: "ഉടമസ്ഥാവകാശ തരം (സ്വന്തം / പാട്ടത്തിന് / പങ്കാളിത്തം)",
+        irrigationSource: "ജലസേചന ഉറവിടം (കനാൽ, കിണർ, മഴ, ഡ്രിപ്പ് മുതലായവ)",
+        soilType: "മണ്ണിന്റെ തരം (കറുപ്പ്, ചുവപ്പ്, മണൽ, എക്കൽ മുതലായവ)",
+        farmLocation: "ഫാം സ്ഥാനം (ജിപിഎസ് / സർവേ നമ്പർ ആവശ്യമെങ്കിൽ)",
+        primaryCrops: "പ്രധാനമായും കൃഷി ചെയ്യുന്ന വിളകൾ (നെല്ല്, ഗോതമ്പ്, ചോളം മുതലായവ)",
+        seasonalCrops: "കാലാനുസൃതമായ വിളകൾ (ഖാരിഫ് / റാബി / സെയ്ദ്)",
+        averageYield: "ഓരോ സീസണിലെയും ശരാശരി വിളവ്",
+        farmingType: "കൃഷി രീതി (പരമ്പരാഗതം / ജൈവ / മിശ്രിതം)",
+        livestock: "കന്നുകാലികളുടെ വിശദാംശങ്ങൾ (ഉണ്ടെങ്കിൽ - പശു, എരുമ, ആട്, കോഴി മുതലായവ)",
+        bankAccount: "ബാങ്ക് അക്കൗണ്ട് വിശദാംശങ്ങൾ (അക്കൗണ്ട് നമ്പർ, IFSC, ബാങ്കിന്റെ പേര്)",
+        paymentMode: "ഇഷ്ടപ്പെട്ട പണമടയ്ക്കൽ രീതി (ബാങ്ക് ട്രാൻസ്ഫർ / പണം)",
+        govtSchemes: "സർക്കാർ പദ്ധതികളിലേക്കുള്ള പ്രവേശനം (ഉണ്ട്/ഇല്ല; ഉണ്ടെങ്കിൽ, ഏതെല്ലാം)",
+        marketChannels: "നിലവിലെ വിപണന മാർഗ്ഗങ്ങൾ (മണ്ടികൾ, ഇടനിലക്കാർ, നേരിട്ടുള്ള വിൽപ്പന, ഓൺലൈൻ പ്ലാറ്റ്‌ഫോമുകൾ)",
+        smartphoneAccess: "സ്മാർട്ട്ഫോൺ / ഇന്റർനെറ്റ് ലഭ്യത (ഉണ്ട്/ഇല്ല)",
+        modernEquipment: "ആധുനിക ഉപകരണങ്ങളുടെ ഉപയോഗം (ട്രാക്ടർ, ഹാർവെസ്റ്റർ, ഡ്രോൺ മുതലായവ)",
+        trainingNeeds: "പരിശീലനത്തിനോ പിന്തുണയ്‌ക്കോ ഉള്ള ആവശ്യം (ഉണ്ട്/ഇല്ല; ജലസേചനം, വളം, കീടനാശിനി, വിപണനം, ഡിജിറ്റൽ ആപ്പുകൾ എന്നിവയിൽ വ്യക്തമാക്കുക)",
+        signature: "കർഷകന്റെ ഒപ്പ് / തള്ളവിരലടയാളം",
+        date: "തീയതി",
+        place: "സ്ഥലം",
+        declaration: "നൽകിയിട്ടുള്ള വിവരങ്ങൾ എന്റെ അറിവിൽ ശരിയാണെന്ന് ഞാൻ ഇതിനാൽ പ്രഖ്യാപിക്കുന്നു."
+      }
     }
   };
-  
+
   const T = TEXTS[language];
 
   return (
@@ -295,15 +295,22 @@ const FarmerInfoForm = ({ isOpen, onClose, language }) => {
               )}
               {/* Step 6: Declaration */}
               {currentStep === 6 && (
+
                 <FormCard>
                   <SectionTitle>{T.steps[5]}</SectionTitle>
-                  <div className="form-declaration">
-                    {T.labels.declaration}
-                  </div>
-                  <div className="form-grid form-grid--three">
-                    <InputField name="signature" label={T.labels.signature} value={formData.signature} onChange={handleChange} />
-                    <InputField name="date" label={T.labels.date} value={formData.date} onChange={handleChange} type="date" />
-                    <InputField name="place" label={T.labels.place} value={formData.place} onChange={handleChange} />
+                  <div className="form-grid form-grid--one">
+                    <div className="form-field form-field--checkbox">
+                      <label className="form-label form-label--inline">
+                        <input
+                          type="checkbox"
+                          name="declaration"
+                          checked={Boolean(formData.declaration)}
+                          onChange={(e) => handleChange({ target: { name: 'declaration', value: e.target.checked } })}
+                          className="form-input form-input--checkbox"
+                        />
+                        <span>{T.labels.declaration}</span>
+                      </label>
+                    </div>
                   </div>
                 </FormCard>
               )}
