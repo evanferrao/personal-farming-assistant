@@ -1,9 +1,109 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { MessageCircle, X, Send, Sprout, Users, TrendingUp, Brain, Shield, Clock, MapPin, Droplets, Bug, Maximize2, Minimize2 } from 'lucide-react'
+import { MessageCircle, X, Send, Sprout, Users, TrendingUp, Brain, Shield, Clock, MapPin, Droplets, Bug, Maximize2, Minimize2, Mic, Square, Loader2 } from 'lucide-react'
 import './App.css'
-import { sendChat } from './lib/chat'
+import { sendChat, sendLocalChat } from './lib/chat'
 import { fetchWeatherForClient } from './lib/weather'
+import { transcribeAudio } from './lib/speech'
+import FarmerInfoForm from './FarmerInfoForm'
+
+const MAX_RECORDING_SECONDS = 10
+const RECORDING_MIME_TYPE = 'audio/webm;codecs=opus'
+
+async function convertBlobToWav(blob, audioContextRef) {
+  const arrayBuffer = await blob.arrayBuffer()
+  let audioContext = audioContextRef.current
+  if (!audioContext) {
+    audioContext = new AudioContext()
+    audioContextRef.current = audioContext
+  }
+
+  if (audioContext.state === 'suspended') {
+    try {
+      await audioContext.resume()
+    } catch (error) {
+      console.warn('Unable to resume audio context', error)
+    }
+  }
+
+  const audioBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0))
+  const wavArrayBuffer = audioBufferToWav(audioBuffer)
+  return new Blob([wavArrayBuffer], { type: 'audio/wav' })
+}
+
+function audioBufferToWav(audioBuffer) {
+  const { numberOfChannels, length, sampleRate } = audioBuffer
+  const bytesPerSample = 2
+  const blockAlign = numberOfChannels * bytesPerSample
+  const dataLength = length * blockAlign
+  const buffer = new ArrayBuffer(44 + dataLength)
+  const view = new DataView(buffer)
+  let offset = 0
+
+  const writeString = (str) => {
+    for (let i = 0; i < str.length; i += 1) {
+      view.setUint8(offset + i, str.charCodeAt(i))
+    }
+    offset += str.length
+  }
+
+  const interleaved = interleaveChannels(audioBuffer)
+
+  writeString('RIFF')
+  view.setUint32(offset, 36 + dataLength, true)
+  offset += 4
+  writeString('WAVE')
+  writeString('fmt ')
+  view.setUint32(offset, 16, true)
+  offset += 4
+  view.setUint16(offset, 1, true)
+  offset += 2
+  view.setUint16(offset, numberOfChannels, true)
+  offset += 2
+  view.setUint32(offset, sampleRate, true)
+  offset += 4
+  view.setUint32(offset, sampleRate * blockAlign, true)
+  offset += 4
+  view.setUint16(offset, blockAlign, true)
+  offset += 2
+  view.setUint16(offset, bytesPerSample * 8, true)
+  offset += 2
+  writeString('data')
+  view.setUint32(offset, dataLength, true)
+  offset += 4
+
+  for (let i = 0; i < interleaved.length; i += 1) {
+    const sample = Math.max(-1, Math.min(1, interleaved[i]))
+    view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true)
+    offset += 2
+  }
+
+  return buffer
+}
+
+function interleaveChannels(audioBuffer) {
+  const { numberOfChannels, length } = audioBuffer
+  const channels = []
+  for (let i = 0; i < numberOfChannels; i += 1) {
+    channels.push(audioBuffer.getChannelData(i))
+  }
+
+  if (numberOfChannels === 1) {
+    return channels[0]
+  }
+
+  const interleaved = new Float32Array(length * numberOfChannels)
+  let index = 0
+
+  for (let i = 0; i < length; i += 1) {
+    for (let channel = 0; channel < numberOfChannels; channel += 1) {
+      interleaved[index] = channels[channel][i]
+      index += 1
+    }
+  }
+
+  return interleaved
+}
 
 function App() {
   // Language selection (ml | en)
@@ -23,8 +123,13 @@ function App() {
       brand: 'കൃഷി സഖി',
       chatNow: 'Chat Now',
       heroSubtitle: 'Kerala കർഷകർക്കായി വ്യക്തിഗതമാക്കിയ, സമയോചിതമായ കാർഷിക ഉപദേശം നൽകുന്ന ഡിജിറ്റൽ സുഹൃത്ത്',
+      provideInfo: 'വിവരങ്ങൾ നൽകുക',
       ctaPrimary: 'Start Farming Journey',
       ctaSecondary: 'Learn More',
+  localChat: 'ലോക്കൽ ചാറ്റ്',
+  assistantTag: 'നിങ്ങളുടെ AI കാർഷിക സഹായി',
+  cloudModeLabel: 'ക്ലൗഡ് മോഡൽ (Online)',
+  localModeLabel: 'ലോക്കൽ മോഡൽ (ഓഫ്‌ലൈൻ)',
       challengeTitle: 'The Challenge',
       challengePara: 'Kerala-ലെ ചെറുകിട കർഷകർക്ക് പലപ്പോഴും വ്യക്തിഗതമാക്കിയ, സമയോചിതമായ കാർഷിക ഉപദേശങ്ങളിലേക്കുള്ള പ്രവേശനം ഇല്ല. പൊതുവായ ഉപദേശങ്ങൾ പ്രാദേശിക വിള തിരഞ്ഞെടുപ്പുകൾ, കാലാവസ്ഥ, മണ്ണിന്റെ അവസ്ഥ അല്ലെങ്കിൽ കൃഷി രീതികൾ എന്നിവ കണക്കിലെടുക്കുന്നതിൽ പരാജയപ്പെടുന്നു.',
       featuresTitle: 'Core Features',
@@ -71,6 +176,10 @@ function App() {
       heroSubtitle: 'A digital companion delivering personalized, timely farm advice for Kerala farmers',
       ctaPrimary: 'Start Farming Journey',
       ctaSecondary: 'Learn More',
+  localChat: 'Local Chat',
+  assistantTag: 'Your AI Farming Assistant',
+  cloudModeLabel: 'Cloud model (Online)',
+  localModeLabel: 'Local model (Offline)',
       challengeTitle: 'The Challenge',
       challengePara: 'Smallholder farmers in Kerala often lack access to timely, personalized advisory. Generic guidance may miss local crop choices, weather, soil conditions, and farming practices.',
       featuresTitle: 'Core Features',
@@ -109,15 +218,33 @@ function App() {
       footerNote: 'Fund availability is subject to availability through government sanction.',
       greeting: 'Hello! I am Krishi Sakhi, your personal farming assistant. How can I help?',
       placeholder: 'How can I help?',
-      error: 'Sorry, there was a server issue. Please try again later.'
+      error: 'Sorry, there was a server issue. Please try again later.',
+      provideInfo: 'Provide Info',
     }
   }
   const [isChatOpen, setIsChatOpen] = useState(false)
+  const [isFarmerFormOpen, setIsFarmerFormOpen] = useState(false)
   const [isFullScreen, setIsFullScreen] = useState(false)
+  const [chatMode, setChatMode] = useState('cloud')
   const defaultMessages = (lng) => ([{ id: 1, text: TEXTS[lng].greeting, sender: 'bot' }])
-  const [messages, setMessages] = useState(() => defaultMessages(lang))
+  const getHistoryKey = (mode) => (mode === 'local' ? 'pfa_chat_history_local' : 'pfa_chat_history')
+  const loadHistory = (mode, lng = lang) => {
+    try {
+      if (typeof window === 'undefined') return defaultMessages(lng)
+      const stored = localStorage.getItem(getHistoryKey(mode))
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      }
+    } catch {}
+    return defaultMessages(lng)
+  }
+  const [messages, setMessages] = useState(() => loadHistory('cloud'))
   const [inputMessage, setInputMessage] = useState("")
     const [isTyping, setIsTyping] = useState(false)
+  const [isRecording, setIsRecording] = useState(false)
+  const [recordingDuration, setRecordingDuration] = useState(0)
+  const [isVoiceProcessing, setIsVoiceProcessing] = useState(false)
   const [weatherInfo, setWeatherInfo] = useState(null)
   const [weatherIp, setWeatherIp] = useState('auto:ip')
   const [weatherError, setWeatherError] = useState(null)
@@ -132,16 +259,156 @@ function App() {
   }
   const [theme, setTheme] = useState(getInitialTheme())
 
-    // Rehydrate from localStorage on mount
-    useEffect(() => {
+  const mediaRecorderRef = useRef(null)
+  const mediaStreamRef = useRef(null)
+  const recordedChunksRef = useRef([])
+  const recordingTimeoutRef = useRef(null)
+  const recordingIntervalRef = useRef(null)
+  const recordingStartRef = useRef(0)
+  const recordingMimeTypeRef = useRef(RECORDING_MIME_TYPE)
+  const audioContextRef = useRef(null)
+  const messagesRef = useRef(messages)
+
+  useEffect(() => {
+    messagesRef.current = messages
+  }, [messages])
+
+  const clearRecordingTimers = () => {
+    if (recordingTimeoutRef.current) {
+      clearTimeout(recordingTimeoutRef.current)
+      recordingTimeoutRef.current = null
+    }
+    if (recordingIntervalRef.current) {
+      clearInterval(recordingIntervalRef.current)
+      recordingIntervalRef.current = null
+    }
+  }
+
+  const stopMediaStream = () => {
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => track.stop())
+      mediaStreamRef.current = null
+    }
+  }
+
+  const handleRecorderStop = () => {
+    clearRecordingTimers()
+    setIsRecording(false)
+    setRecordingDuration(0)
+    stopMediaStream()
+    mediaRecorderRef.current = null
+
+    const chunks = recordedChunksRef.current
+    recordedChunksRef.current = []
+
+    if (!chunks.length) return
+
+    const mimeType = recordingMimeTypeRef.current || 'audio/webm'
+    const audioBlob = new Blob(chunks, { type: mimeType })
+    processVoiceBlob(audioBlob)
+  }
+
+  const stopRecording = () => {
+    const recorder = mediaRecorderRef.current
+    if (!recorder) return
+    if (recorder.state !== 'inactive') {
       try {
-        const saved = localStorage.getItem('pfa_chat_history')
-        if (saved) {
-          const parsed = JSON.parse(saved)
-          if (Array.isArray(parsed) && parsed.length > 0) setMessages(parsed)
+        recorder.stop()
+      } catch (error) {
+        console.error('Failed to stop recorder:', error)
+      }
+    }
+  }
+
+  const processVoiceBlob = async (rawBlob) => {
+    if (!rawBlob || !rawBlob.size) return
+    setIsVoiceProcessing(true)
+    try {
+      const wavBlob = await convertBlobToWav(rawBlob, audioContextRef)
+      const history = messagesRef.current || []
+      const previousUser = [...history].reverse().find(m => m.sender === 'user')?.text || ''
+      const previousBot = [...history].reverse().find(m => m.sender === 'bot')?.text || ''
+
+      const languageLabel = lang === 'ml' ? 'Malayalam' : 'English'
+      const transcription = await transcribeAudio(wavBlob, {
+        language: languageLabel,
+        questionPrev: previousUser,
+        answerPrev: previousBot
+      })
+
+      await handleSendMessage(transcription)
+    } catch (error) {
+      console.error('Voice transcription failed:', error)
+      setMessages(prev => [...prev, { id: Date.now(), text: 'Sorry, I could not understand that voice message.', sender: 'bot' }])
+    } finally {
+      setIsVoiceProcessing(false)
+    }
+  }
+
+  const startRecording = async () => {
+    if (isRecording || isVoiceProcessing) return
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setMessages(prev => [...prev, { id: Date.now(), text: 'Voice input is not supported in this browser.', sender: 'bot' }])
+      return
+    }
+
+    try {
+      clearRecordingTimers()
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      mediaStreamRef.current = stream
+      const options = MediaRecorder.isTypeSupported(RECORDING_MIME_TYPE)
+        ? { mimeType: RECORDING_MIME_TYPE }
+        : undefined
+      const recorder = new MediaRecorder(stream, options)
+      recordingMimeTypeRef.current = recorder.mimeType || RECORDING_MIME_TYPE
+
+      recordedChunksRef.current = []
+      recorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          recordedChunksRef.current.push(event.data)
         }
-      } catch {}
-    }, [])
+      }
+      recorder.onstop = handleRecorderStop
+
+      recorder.start()
+      mediaRecorderRef.current = recorder
+      recordingStartRef.current = Date.now()
+      setRecordingDuration(0)
+      setIsRecording(true)
+
+      recordingIntervalRef.current = setInterval(() => {
+        const elapsed = (Date.now() - recordingStartRef.current) / 1000
+        setRecordingDuration(Number(Math.min(MAX_RECORDING_SECONDS, elapsed).toFixed(1)))
+      }, 100)
+
+      recordingTimeoutRef.current = setTimeout(() => {
+        stopRecording()
+      }, MAX_RECORDING_SECONDS * 1000)
+    } catch (error) {
+      console.error('Failed to start recording:', error)
+      stopMediaStream()
+      clearRecordingTimers()
+      setIsRecording(false)
+      setRecordingDuration(0)
+      mediaRecorderRef.current = null
+      const message = error?.name === 'NotAllowedError'
+        ? 'Microphone access was denied. Please enable it to record voice messages.'
+        : 'Unable to access the microphone.'
+      setMessages(prev => [...prev, { id: Date.now(), text: message, sender: 'bot' }])
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      clearRecordingTimers()
+      stopMediaStream()
+      if (audioContextRef.current) {
+        const ctx = audioContextRef.current
+        audioContextRef.current = null
+        ctx.close?.().catch(() => {})
+      }
+    }
+  }, [])
 
     // Persist language and update default greeting only for a fresh session
     useEffect(() => {
@@ -156,8 +423,8 @@ function App() {
 
     // Persist on change
     useEffect(() => {
-      try { localStorage.setItem('pfa_chat_history', JSON.stringify(messages)) } catch {}
-    }, [messages])
+      try { localStorage.setItem(getHistoryKey(chatMode), JSON.stringify(messages)) } catch {}
+    }, [messages, chatMode])
 
     // Lock body scroll when chat is open
     useEffect(() => {
@@ -200,20 +467,32 @@ function App() {
       }
     }, [locale])
 
-  const handleSendMessage = async () => {
-    const text = inputMessage.trim()
+  const openChat = (mode = 'cloud') => {
+    setChatMode(mode)
+    setMessages(loadHistory(mode))
+    setInputMessage('')
+    setIsTyping(false)
+    setIsChatOpen(true)
+  }
+
+  const handleSendMessage = async (overrideText) => {
+    const source = typeof overrideText === 'string' ? overrideText : inputMessage
+    const text = source.trim()
     if (!text) return
 
     const userMsg = { id: Date.now(), text, sender: 'user' }
     setMessages(prev => [...prev, userMsg])
-    setInputMessage('')
+    if (typeof overrideText !== 'string') {
+      setInputMessage('')
+    }
     setIsTyping(true)
 
     try {
       // Limit history to last 12 turns to keep prompt small
       const history = [...messages, userMsg]
       const trimmed = history.slice(-24) // messages are single turns, 24 ~ 12 exchanges
-      const { reply } = await sendChat(trimmed, { locale })
+      const sendFn = chatMode === 'local' ? sendLocalChat : sendChat
+      const { reply } = await sendFn(trimmed, { locale })
       setMessages(prev => [...prev, { id: Date.now() + 1, text: reply, sender: 'bot' }])
     } catch (e) {
       setMessages(prev => [...prev, { id: Date.now() + 2, text: TEXTS[lang].error, sender: 'bot' }])
@@ -271,6 +550,10 @@ function App() {
 
   // impacts moved into TEXTS
 
+  const chatModeLabel = chatMode === 'local'
+    ? TEXTS[lang].localModeLabel
+    : TEXTS[lang].cloudModeLabel
+
   return (
   <div className={`min-h-screen bg-gradient-to-br ${theme === 'dark' ? 'from-gray-900 to-gray-800' : 'from-green-50 to-emerald-100'}`}>
       {/* Navigation */}
@@ -317,7 +600,7 @@ function App() {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => setIsChatOpen(true)}
+              onClick={() => openChat('cloud')}
               className="bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-full flex items-center space-x-2 transition-all duration-300 shadow-lg hover:shadow-xl chat-launch-btn"
             >
               <MessageCircle className="w-5 h-5" />
@@ -358,6 +641,14 @@ function App() {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              onClick={() => setIsFarmerFormOpen(true)}
+              className="text-green-700 px-7 py-4 rounded-full text-base md:text-lg font-semibold transition-all duration-300 cta-btn secondary-cta"
+            >
+              {TEXTS[lang].provideInfo}
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => setIsChatOpen(true)}
               className="bg-green-600 hover:bg-green-700 text-white px-7 py-4 rounded-full text-base md:text-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl cta-btn primary-cta"
             >
@@ -369,6 +660,14 @@ function App() {
               className="text-green-700 px-7 py-4 rounded-full text-base md:text-lg font-semibold transition-all duration-300 cta-btn secondary-cta"
             >
               {TEXTS[lang].ctaSecondary}
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => openChat('local')}
+              className="text-green-700 border border-green-500 px-7 py-4 rounded-full text-base md:text-lg font-semibold transition-all duration-300 cta-btn local-cta"
+            >
+              {TEXTS[lang].localChat}
             </motion.button>
           </motion.div>
         </div>
@@ -569,8 +868,11 @@ function App() {
                     <Sprout className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="font-bold">കൃഷി സഖി</h3>
-                    <p className="text-green-100 text-sm">Your AI Farming Assistant</p>
+                    <h3 className="font-bold">{TEXTS[lang].brand}</h3>
+                    <p className="text-green-100 text-sm">
+                      {TEXTS[lang].assistantTag}
+                      <span className="block text-green-100/80 text-xs mt-1">{chatModeLabel}</span>
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -631,28 +933,58 @@ function App() {
 
               {/* Chat Input */}
               <div className="p-6 border-t border-gray-200 chat-input-area">
-                <div className="flex space-x-4 chat-input-wrap">
-                  <input
-                    type="text"
-                    value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                    placeholder={TEXTS[lang].placeholder}
-                    className="flex-1 border border-gray-300 rounded-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 chat-input"
-                  />
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={handleSendMessage}
-                    className="bg-green-600 hover:bg-green-700 text-white p-3 rounded-full transition-colors send-btn"
-                  >
-                    <Send className="w-6 h-6" />
-                  </motion.button>
+                <div className="chat-input-wrap">
+                  <div className="chat-input-row">
+                    <button
+                      type="button"
+                      onClick={isRecording ? stopRecording : startRecording}
+                      className={`voice-btn ${isRecording ? 'recording' : ''}`}
+                      disabled={isVoiceProcessing}
+                      title={isRecording ? 'Stop recording' : 'Record voice message'}
+                    >
+                      {isVoiceProcessing ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : isRecording ? (
+                        <Square className="w-5 h-5" />
+                      ) : (
+                        <Mic className="w-5 h-5" />
+                      )}
+                    </button>
+                    <input
+                      type="text"
+                      value={inputMessage}
+                      onChange={(e) => setInputMessage(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                      placeholder={TEXTS[lang].placeholder}
+                      className="flex-1 border border-gray-300 rounded-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 chat-input"
+                      disabled={isVoiceProcessing}
+                    />
+                    <motion.button
+                      whileHover={{ scale: (isTyping || isVoiceProcessing) ? 1 : 1.05 }}
+                      whileTap={{ scale: (isTyping || isVoiceProcessing) ? 1 : 0.95 }}
+                      onClick={() => handleSendMessage()}
+                      className={`bg-green-600 hover:bg-green-700 text-white p-3 rounded-full transition-colors send-btn ${(isTyping || isVoiceProcessing) ? 'disabled' : ''}`}
+                      disabled={isTyping || isVoiceProcessing}
+                    >
+                      <Send className="w-6 h-6" />
+                    </motion.button>
+                  </div>
+                  {(isRecording || isVoiceProcessing) && (
+                    <div className="voice-status">
+                      {isRecording
+                        ? `Recording… ${recordingDuration.toFixed(1)}s`
+                        : 'Transcribing voice message…'}
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>
           </motion.div>
         )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isFarmerFormOpen && <FarmerInfoForm isOpen={isFarmerFormOpen} onClose={() => setIsFarmerFormOpen(false)} language={lang} />}
       </AnimatePresence>
     </div>
   )

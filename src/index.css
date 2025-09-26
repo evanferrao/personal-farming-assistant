@@ -199,6 +199,7 @@ a {
 .bg-white { background-color: rgb(255 255 255); }
 .bg-dark-card { background-color: rgba(24, 32, 28, 0.9); }
 .rounded-2xl { border-radius: 1rem; }
+.rounded-3x1 { padding: 10px;}
 .p-8 { padding: 2rem; }
 .hover\:shadow-2xl:hover { box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25); }
 .border { border-width: 1px; }
@@ -222,7 +223,7 @@ a {
 .inset-0 { top: 0px; right: 0px; bottom: 0px; left: 0px; }
 .bg-black\/50 { background-color: rgb(0 0 0 / 0.5); }
 .p-4 { padding: 1rem; }
-.w-full { width: 100%; }
+.w-full { width: 100%; padding: 0.5rem;}
 .max-w-2xl { max-width: 42rem; }
 .h-\[600px\] { height: 600px; }
 .h-85dvh { height: 85dvh; height: 85vh; }
@@ -241,6 +242,7 @@ a {
 .flex-1 { flex: 1 1 0%; }
 .overflow-y-auto { overflow-y: auto; }
 .space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 1rem; }
+.space-y-2 { margin: 1.5rem;}
 .justify-end { justify-content: flex-end; }
 .justify-start { justify-content: flex-start; }
 .max-w-xs { max-width: 20rem; }

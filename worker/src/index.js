@@ -47,6 +47,71 @@ export default {
       return json(data)
     }
 
+    if (url.pathname === '/api/speechtotext' && request.method === 'POST') {
+      try {
+        const formData = await request.formData()
+        const audio = formData.get('audio')
+
+        if (!(audio instanceof File)) {
+          return json({ error: 'audio file is required' }, 400)
+        }
+
+        const forwardForm = new FormData()
+        const language = formData.get('language') || 'English'
+        const questionPrev = formData.get('question_prev') ?? formData.get('questionPrev') ?? ''
+        const answerPrev = formData.get('answer_prev') ?? formData.get('answerPrev') ?? ''
+
+        forwardForm.set('language', language)
+        forwardForm.set('question_prev', typeof questionPrev === 'string' ? questionPrev : '')
+        forwardForm.set('answer_prev', typeof answerPrev === 'string' ? answerPrev : '')
+        forwardForm.set('audio', audio, audio.name || 'audio.wav')
+
+        const endpoint = typeof env.STT_API_ENDPOINT === 'string' ? env.STT_API_ENDPOINT.trim() : ''
+        if (!endpoint) {
+          return json({ error: 'Server not configured: STT_API_ENDPOINT missing' }, 500)
+        }
+
+        const upstreamResp = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:139.0) Gecko/20100101 Firefox/139.0',
+            'Accept': 'application/json, text/plain, */*',
+          },
+          body: forwardForm
+        })
+
+        const bodyText = await upstreamResp.text()
+
+        if (!upstreamResp.ok) {
+          let upstreamError = null
+          try {
+            upstreamError = JSON.parse(bodyText)
+          } catch (_) {}
+          const message = upstreamError?.error || 'Upstream service error'
+          return json({ error: message }, upstreamResp.status || 502)
+        }
+
+        let data
+        try {
+          data = JSON.parse(bodyText)
+        } catch (parseError) {
+          return json({ error: 'Invalid response from upstream service' }, 502)
+        }
+
+        const questionRaw = typeof data.question === 'string' ? data.question : null
+        const questionFallback = typeof data.question_en === 'string' ? data.question_en : null
+        const transcription = questionRaw || questionFallback
+
+        if (!transcription) {
+          return json({ error: 'Upstream response did not include a question' }, 502)
+        }
+
+        return json({ speechtotext: transcription })
+      } catch (error) {
+        return json({ error: 'Failed to proxy speech to text request' }, 502)
+      }
+    }
+
     if (url.pathname === '/api/chat' && request.method === 'POST') {
       try {
         const { messages = [], locale = env.LOCALE || 'ml-IN', sessionId } = await request.json()
