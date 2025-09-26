@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import './FarmerInfoForm.css';
@@ -50,6 +50,14 @@ const FarmerInfoForm = ({ isOpen, onClose, language }) => {
     date: '',
     place: '',
   });
+
+  const formBodyRef = useRef(null); // 👈 create a ref
+
+useEffect(() => {
+  if (formBodyRef.current) {
+    formBodyRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}, [currentStep]); // 👈 runs every time step changes
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -218,7 +226,7 @@ const FarmerInfoForm = ({ isOpen, onClose, language }) => {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="farmer-form-body">
+        <form onSubmit={handleSubmit} className="farmer-form-body"  ref={formBodyRef}>
           <AnimatePresence mode="wait">
             <motion.div
               key={currentStep}

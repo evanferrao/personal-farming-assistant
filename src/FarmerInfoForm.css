@@ -42,7 +42,7 @@
 
 .farmer-form-modal {
   width: min(960px, 100%);
-  max-height: 95vh;
+  max-height: 98vh;
   display: flex;
   flex-direction: column;
   border-radius: 28px;
@@ -57,7 +57,7 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 1.5rem;
-  padding: clamp(1.5rem, 1.5vw + 1.25rem, 2.25rem) clamp(1.75rem, 1.5vw + 1.25rem, 2.5rem) clamp(1.25rem, 1vw + 1rem, 1.75rem);
+  padding: 1rem 1.25rem 0.75rem;
   background: linear-gradient(120deg, rgba(56, 189, 248, 0.14), rgba(22, 163, 74, 0.18));
   backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(99, 102, 241, 0.12);
@@ -177,8 +177,8 @@
 .form-progress {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  padding: clamp(1.35rem, 1.2vw + 1rem, 1.75rem) clamp(1.75rem, 1.5vw + 1.25rem, 2.5rem);
+  padding: 0.75rem 1.25rem; /* reduce space around progress bar */
+  gap: 0.5rem;
   background: var(--form-surface);
   border-bottom: 1px solid rgba(148, 163, 184, 0.18);
 }
@@ -264,10 +264,11 @@
 .farmer-form-body {
   flex: 1;
   overflow-y: auto;
-  padding: clamp(1.75rem, 1.5vw + 1.5rem, 2.5rem);
+  padding: 1rem 1.25rem;
+  gap: 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: clamp(1.75rem, 1.5vw + 1.25rem, 2.5rem);
+  /* gap: clamp(1.75rem, 1.5vw + 1.25rem, 2.5rem); */
   background: var(--form-background-muted);
 }
 
@@ -293,8 +294,8 @@
 .form-card {
   display: flex;
   flex-direction: column;
-  gap: clamp(1.5rem, 1vw + 1.25rem, 2.5rem);
-  padding: clamp(1.75rem, 1.2vw + 1.5rem, 2.5rem);
+  padding: 1rem 1.25rem;
+  gap: 1.25rem;
   border-radius: 24px;
   background: var(--form-surface-strong);
   border: 1px solid rgba(59, 130, 246, 0.12);
