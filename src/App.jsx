@@ -124,8 +124,8 @@ function App() {
       chatNow: 'Chat Now',
       heroSubtitle: 'Kerala കർഷകർക്കായി വ്യക്തിഗതമാക്കിയ, സമയോചിതമായ കാർഷിക ഉപദേശം നൽകുന്ന ഡിജിറ്റൽ സുഹൃത്ത്',
       provideInfo: 'വിവരങ്ങൾ നൽകുക',
-      ctaPrimary: 'Start Farming Journey',
-      ctaSecondary: 'Learn More',
+      ctaPrimary: 'കൃഷി യാത്ര ആരംഭിക്കൂ',
+      ctaSecondary: 'കൂടുതലറിയുക',
   localChat: 'ലോക്കൽ ചാറ്റ്',
   assistantTag: 'നിങ്ങളുടെ AI കാർഷിക സഹായി',
   cloudModeLabel: 'ക്ലൗഡ് മോഡൽ (Online)',
@@ -665,7 +665,7 @@ function App() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => openChat('local')}
-              className="text-green-700 border border-green-500 px-7 py-4 rounded-full text-base md:text-lg font-semibold transition-all duration-300 cta-btn local-cta"
+              className="bg-green-600 hover:bg-green-700 text-white px-7 py-4 rounded-full text-base md:text-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl cta-btn primary-cta"
             >
               {TEXTS[lang].localChat}
             </motion.button>
