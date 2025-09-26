@@ -17,12 +17,28 @@ const FormCard = ({ children }) => (
   </div>
 );
 
-const AUDIO_BASE_PATH = `${import.meta.env.BASE_URL}assets/audio/`;
+const audioModules = import.meta.glob('../assets/audio/*.wav', {
+  eager: true,
+  import: 'default'
+});
+
+const audioFiles = Object.fromEntries(
+  Object.entries(audioModules).map(([path, url]) => [path.split('/').pop(), url])
+);
+
+const getAudioUrl = (fileName) => (fileName ? audioFiles[fileName] ?? null : null);
 
 let activeFieldAudio = null;
 
 const playFieldAudio = (fileName) => {
   if (!fileName) return;
+
+  const audioUrl = getAudioUrl(fileName);
+
+  if (!audioUrl) {
+    console.warn(`Audio file not found: ${fileName}`);
+    return;
+  }
 
   if (activeFieldAudio) {
     activeFieldAudio.pause();
@@ -30,7 +46,7 @@ const playFieldAudio = (fileName) => {
   }
 
   try {
-    const audio = new Audio(`${AUDIO_BASE_PATH}${fileName}`);
+    const audio = new Audio(audioUrl);
     activeFieldAudio = audio;
     audio.play().catch((error) => {
       console.error(`Audio playback failed for ${fileName}`, error);
@@ -45,7 +61,7 @@ const LabelWithAudio = ({ htmlFor, label, audioKey }) => {
   const baseKey = audioKey || htmlFor;
 
   const handlePlay = (variant) => {
-    const suffix = variant === 'ml' ? '_malyalamm' : '';
+    const suffix = variant === 'ml' ? '_malayalam' : '';
     playFieldAudio(`${baseKey}${suffix}.wav`);
   };
 
