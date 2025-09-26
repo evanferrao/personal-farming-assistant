@@ -1,10 +1,109 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { MessageCircle, X, Send, Sprout, Users, TrendingUp, Brain, Shield, Clock, MapPin, Droplets, Bug, Maximize2, Minimize2 } from 'lucide-react'
+import { MessageCircle, X, Send, Sprout, Users, TrendingUp, Brain, Shield, Clock, MapPin, Droplets, Bug, Maximize2, Minimize2, Mic, Square, Loader2 } from 'lucide-react'
 import './App.css'
 import { sendChat, sendLocalChat } from './lib/chat'
 import { fetchWeatherForClient } from './lib/weather'
+import { transcribeAudio } from './lib/speech'
 import FarmerInfoForm from './FarmerInfoForm'
+
+const MAX_RECORDING_SECONDS = 10
+const RECORDING_MIME_TYPE = 'audio/webm;codecs=opus'
+
+async function convertBlobToWav(blob, audioContextRef) {
+  const arrayBuffer = await blob.arrayBuffer()
+  let audioContext = audioContextRef.current
+  if (!audioContext) {
+    audioContext = new AudioContext()
+    audioContextRef.current = audioContext
+  }
+
+  if (audioContext.state === 'suspended') {
+    try {
+      await audioContext.resume()
+    } catch (error) {
+      console.warn('Unable to resume audio context', error)
+    }
+  }
+
+  const audioBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0))
+  const wavArrayBuffer = audioBufferToWav(audioBuffer)
+  return new Blob([wavArrayBuffer], { type: 'audio/wav' })
+}
+
+function audioBufferToWav(audioBuffer) {
+  const { numberOfChannels, length, sampleRate } = audioBuffer
+  const bytesPerSample = 2
+  const blockAlign = numberOfChannels * bytesPerSample
+  const dataLength = length * blockAlign
+  const buffer = new ArrayBuffer(44 + dataLength)
+  const view = new DataView(buffer)
+  let offset = 0
+
+  const writeString = (str) => {
+    for (let i = 0; i < str.length; i += 1) {
+      view.setUint8(offset + i, str.charCodeAt(i))
+    }
+    offset += str.length
+  }
+
+  const interleaved = interleaveChannels(audioBuffer)
+
+  writeString('RIFF')
+  view.setUint32(offset, 36 + dataLength, true)
+  offset += 4
+  writeString('WAVE')
+  writeString('fmt ')
+  view.setUint32(offset, 16, true)
+  offset += 4
+  view.setUint16(offset, 1, true)
+  offset += 2
+  view.setUint16(offset, numberOfChannels, true)
+  offset += 2
+  view.setUint32(offset, sampleRate, true)
+  offset += 4
+  view.setUint32(offset, sampleRate * blockAlign, true)
+  offset += 4
+  view.setUint16(offset, blockAlign, true)
+  offset += 2
+  view.setUint16(offset, bytesPerSample * 8, true)
+  offset += 2
+  writeString('data')
+  view.setUint32(offset, dataLength, true)
+  offset += 4
+
+  for (let i = 0; i < interleaved.length; i += 1) {
+    const sample = Math.max(-1, Math.min(1, interleaved[i]))
+    view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true)
+    offset += 2
+  }
+
+  return buffer
+}
+
+function interleaveChannels(audioBuffer) {
+  const { numberOfChannels, length } = audioBuffer
+  const channels = []
+  for (let i = 0; i < numberOfChannels; i += 1) {
+    channels.push(audioBuffer.getChannelData(i))
+  }
+
+  if (numberOfChannels === 1) {
+    return channels[0]
+  }
+
+  const interleaved = new Float32Array(length * numberOfChannels)
+  let index = 0
+
+  for (let i = 0; i < length; i += 1) {
+    for (let channel = 0; channel < numberOfChannels; channel += 1) {
+      interleaved[index] = channels[channel][i]
+      index += 1
+    }
+  }
+
+  return interleaved
+}
 
 function App() {
   // Language selection (ml | en)
@@ -143,6 +242,9 @@ function App() {
   const [messages, setMessages] = useState(() => loadHistory('cloud'))
   const [inputMessage, setInputMessage] = useState("")
     const [isTyping, setIsTyping] = useState(false)
+  const [isRecording, setIsRecording] = useState(false)
+  const [recordingDuration, setRecordingDuration] = useState(0)
+  const [isVoiceProcessing, setIsVoiceProcessing] = useState(false)
   const [weatherInfo, setWeatherInfo] = useState(null)
   const [weatherIp, setWeatherIp] = useState('auto:ip')
   const [weatherError, setWeatherError] = useState(null)
@@ -156,6 +258,157 @@ function App() {
     return 'dark'
   }
   const [theme, setTheme] = useState(getInitialTheme())
+
+  const mediaRecorderRef = useRef(null)
+  const mediaStreamRef = useRef(null)
+  const recordedChunksRef = useRef([])
+  const recordingTimeoutRef = useRef(null)
+  const recordingIntervalRef = useRef(null)
+  const recordingStartRef = useRef(0)
+  const recordingMimeTypeRef = useRef(RECORDING_MIME_TYPE)
+  const audioContextRef = useRef(null)
+  const messagesRef = useRef(messages)
+
+  useEffect(() => {
+    messagesRef.current = messages
+  }, [messages])
+
+  const clearRecordingTimers = () => {
+    if (recordingTimeoutRef.current) {
+      clearTimeout(recordingTimeoutRef.current)
+      recordingTimeoutRef.current = null
+    }
+    if (recordingIntervalRef.current) {
+      clearInterval(recordingIntervalRef.current)
+      recordingIntervalRef.current = null
+    }
+  }
+
+  const stopMediaStream = () => {
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => track.stop())
+      mediaStreamRef.current = null
+    }
+  }
+
+  const handleRecorderStop = () => {
+    clearRecordingTimers()
+    setIsRecording(false)
+    setRecordingDuration(0)
+    stopMediaStream()
+    mediaRecorderRef.current = null
+
+    const chunks = recordedChunksRef.current
+    recordedChunksRef.current = []
+
+    if (!chunks.length) return
+
+    const mimeType = recordingMimeTypeRef.current || 'audio/webm'
+    const audioBlob = new Blob(chunks, { type: mimeType })
+    processVoiceBlob(audioBlob)
+  }
+
+  const stopRecording = () => {
+    const recorder = mediaRecorderRef.current
+    if (!recorder) return
+    if (recorder.state !== 'inactive') {
+      try {
+        recorder.stop()
+      } catch (error) {
+        console.error('Failed to stop recorder:', error)
+      }
+    }
+  }
+
+  const processVoiceBlob = async (rawBlob) => {
+    if (!rawBlob || !rawBlob.size) return
+    setIsVoiceProcessing(true)
+    try {
+      const wavBlob = await convertBlobToWav(rawBlob, audioContextRef)
+      const history = messagesRef.current || []
+      const previousUser = [...history].reverse().find(m => m.sender === 'user')?.text || ''
+      const previousBot = [...history].reverse().find(m => m.sender === 'bot')?.text || ''
+
+      const languageLabel = lang === 'ml' ? 'Malayalam' : 'English'
+      const transcription = await transcribeAudio(wavBlob, {
+        language: languageLabel,
+        questionPrev: previousUser,
+        answerPrev: previousBot
+      })
+
+      await handleSendMessage(transcription)
+    } catch (error) {
+      console.error('Voice transcription failed:', error)
+      setMessages(prev => [...prev, { id: Date.now(), text: 'Sorry, I could not understand that voice message.', sender: 'bot' }])
+    } finally {
+      setIsVoiceProcessing(false)
+    }
+  }
+
+  const startRecording = async () => {
+    if (isRecording || isVoiceProcessing) return
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setMessages(prev => [...prev, { id: Date.now(), text: 'Voice input is not supported in this browser.', sender: 'bot' }])
+      return
+    }
+
+    try {
+      clearRecordingTimers()
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      mediaStreamRef.current = stream
+      const options = MediaRecorder.isTypeSupported(RECORDING_MIME_TYPE)
+        ? { mimeType: RECORDING_MIME_TYPE }
+        : undefined
+      const recorder = new MediaRecorder(stream, options)
+      recordingMimeTypeRef.current = recorder.mimeType || RECORDING_MIME_TYPE
+
+      recordedChunksRef.current = []
+      recorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          recordedChunksRef.current.push(event.data)
+        }
+      }
+      recorder.onstop = handleRecorderStop
+
+      recorder.start()
+      mediaRecorderRef.current = recorder
+      recordingStartRef.current = Date.now()
+      setRecordingDuration(0)
+      setIsRecording(true)
+
+      recordingIntervalRef.current = setInterval(() => {
+        const elapsed = (Date.now() - recordingStartRef.current) / 1000
+        setRecordingDuration(Number(Math.min(MAX_RECORDING_SECONDS, elapsed).toFixed(1)))
+      }, 100)
+
+      recordingTimeoutRef.current = setTimeout(() => {
+        stopRecording()
+      }, MAX_RECORDING_SECONDS * 1000)
+    } catch (error) {
+      console.error('Failed to start recording:', error)
+      stopMediaStream()
+      clearRecordingTimers()
+      setIsRecording(false)
+      setRecordingDuration(0)
+      mediaRecorderRef.current = null
+      const message = error?.name === 'NotAllowedError'
+        ? 'Microphone access was denied. Please enable it to record voice messages.'
+        : 'Unable to access the microphone.'
+      setMessages(prev => [...prev, { id: Date.now(), text: message, sender: 'bot' }])
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      clearRecordingTimers()
+      stopMediaStream()
+      if (audioContextRef.current) {
+        const ctx = audioContextRef.current
+        audioContextRef.current = null
+        ctx.close?.().catch(() => {})
+      }
+    }
+  }, [])
 
     // Persist language and update default greeting only for a fresh session
     useEffect(() => {
@@ -222,13 +475,16 @@ function App() {
     setIsChatOpen(true)
   }
 
-  const handleSendMessage = async () => {
-    const text = inputMessage.trim()
+  const handleSendMessage = async (overrideText) => {
+    const source = typeof overrideText === 'string' ? overrideText : inputMessage
+    const text = source.trim()
     if (!text) return
 
     const userMsg = { id: Date.now(), text, sender: 'user' }
     setMessages(prev => [...prev, userMsg])
-    setInputMessage('')
+    if (typeof overrideText !== 'string') {
+      setInputMessage('')
+    }
     setIsTyping(true)
 
     try {
@@ -724,23 +980,49 @@ function App() {
 
               {/* Chat Input */}
               <div className="p-6 border-t border-gray-200 chat-input-area">
-                <div className="flex space-x-4 chat-input-wrap">
-                  <input
-                    type="text"
-                    value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                    placeholder={TEXTS[lang].placeholder}
-                    className="flex-1 border border-gray-300 rounded-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 chat-input"
-                  />
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={handleSendMessage}
-                    className="bg-green-600 hover:bg-green-700 text-white p-3 rounded-full transition-colors send-btn"
-                  >
-                    <Send className="w-6 h-6" />
-                  </motion.button>
+                <div className="chat-input-wrap">
+                  <div className="chat-input-row">
+                    <button
+                      type="button"
+                      onClick={isRecording ? stopRecording : startRecording}
+                      className={`voice-btn ${isRecording ? 'recording' : ''}`}
+                      disabled={isVoiceProcessing}
+                      title={isRecording ? 'Stop recording' : 'Record voice message'}
+                    >
+                      {isVoiceProcessing ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : isRecording ? (
+                        <Square className="w-5 h-5" />
+                      ) : (
+                        <Mic className="w-5 h-5" />
+                      )}
+                    </button>
+                    <input
+                      type="text"
+                      value={inputMessage}
+                      onChange={(e) => setInputMessage(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                      placeholder={TEXTS[lang].placeholder}
+                      className="flex-1 border border-gray-300 rounded-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 chat-input"
+                      disabled={isVoiceProcessing}
+                    />
+                    <motion.button
+                      whileHover={{ scale: (isTyping || isVoiceProcessing) ? 1 : 1.05 }}
+                      whileTap={{ scale: (isTyping || isVoiceProcessing) ? 1 : 0.95 }}
+                      onClick={() => handleSendMessage()}
+                      className={`bg-green-600 hover:bg-green-700 text-white p-3 rounded-full transition-colors send-btn ${(isTyping || isVoiceProcessing) ? 'disabled' : ''}`}
+                      disabled={isTyping || isVoiceProcessing}
+                    >
+                      <Send className="w-6 h-6" />
+                    </motion.button>
+                  </div>
+                  {(isRecording || isVoiceProcessing) && (
+                    <div className="voice-status">
+                      {isRecording
+                        ? `Recording… ${recordingDuration.toFixed(1)}s`
+                        : 'Transcribing voice message…'}
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>

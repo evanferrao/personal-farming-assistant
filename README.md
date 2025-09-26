@@ -42,12 +42,15 @@ This repo includes two backend options. For local development, run the Node serv
    - `API_KEY` and `MODEL` for Gemini chat
    - `SYSTEM_PROMPT` (optional)
    - `WEATHER_API_KEY` for WeatherAPI lookups
+   - `STT_API_ENDPOINT` pointing to your upstream speech-to-text service
 2) In one terminal:
     - `cd server && npm install && npm run dev`
 3) In another terminal:
     - `npm run dev`
 
 Vite proxies `/api` to `http://localhost:8787` during dev.
+
+🎙️ **Voice input:** the chat widget now supports recording short (<10s) microphone snippets and sends them to `/api/speechtotext` before piping the transcription into the active chat endpoint (`/api/chat` or `/api/localchat`). Grant microphone permission when the browser prompts.
 
 ### Production AI via Cloudflare Worker
 
@@ -59,10 +62,11 @@ You can deploy the stateless chat endpoint as a Cloudflare Worker so your API ke
    - `npm i -g wrangler` (if not installed)
    - `wrangler login`
    - Set secrets and vars:
-      - `wrangler secret put API_KEY`
-      - `wrangler secret put SYSTEM_PROMPT`
-      - `wrangler secret put MODEL`
-      - `wrangler secret put WEATHER_API_KEY`
+   - `wrangler secret put API_KEY`
+   - `wrangler secret put SYSTEM_PROMPT`
+   - `wrangler secret put MODEL`
+   - `wrangler secret put WEATHER_API_KEY`
+   - `wrangler secret put STT_API_ENDPOINT`
    - `wrangler deploy`
 
 The deploy command will output a Worker URL like `https://farmerportal-api.your-account.workers.dev`.

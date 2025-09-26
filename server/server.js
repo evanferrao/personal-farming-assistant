@@ -14,6 +14,7 @@ const PORT = process.env.PORT || 8787;
 const API_KEY = process.env.API_KEY;
 const MODEL = process.env.MODEL;
 const WEATHER_API_KEY = process.env.WEATHER_API_KEY;
+const STT_API_ENDPOINT = process.env.STT_API_ENDPOINT?.trim();
 
 if (!API_KEY) {
   console.warn('[WARN] API_KEY not set. /api/chat will return 500 until it is configured.');
@@ -23,6 +24,9 @@ if (!MODEL) {
 }
 if (!WEATHER_API_KEY) {
   console.warn('[WARN] WEATHER_API_KEY not set. /api/weather will return 500 until it is configured.');
+}
+if (!STT_API_ENDPOINT) {
+  console.warn('[WARN] STT_API_ENDPOINT not set. /api/speechtotext will return 500 until it is configured.');
 }
 
 const app = express();
@@ -111,6 +115,10 @@ app.post('/api/speechtotext', upload.single('audio'), async (req, res) => {
         ? req.body.answerPrev
         : '';
 
+    if (!STT_API_ENDPOINT) {
+      return res.status(500).json({ error: 'Server not configured: STT_API_ENDPOINT missing' });
+    }
+
     const formData = new FormData();
     formData.append('language', language);
     formData.append('question_prev', questionPrev);
@@ -120,13 +128,11 @@ app.post('/api/speechtotext', upload.single('audio'), async (req, res) => {
       contentType: file.mimetype || 'audio/wav'
     });
 
-    const upstreamResp = await fetch('https://api1.kissangpt.com/v1/inference/web', {
+    const upstreamResp = await fetch(STT_API_ENDPOINT, {
       method: 'POST',
       headers: {
         'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:139.0) Gecko/20100101 Firefox/139.0',
-        'Accept': 'application/json, text/plain, */*',
-        'Origin': 'https://kissan.ai',
-        'Referer': 'https://kissan.ai/'
+        'Accept': 'application/json, text/plain, */*'
       },
       body: formData
     });
