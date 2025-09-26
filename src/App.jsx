@@ -1,3 +1,5 @@
+// App.jsx
+
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MessageCircle, X, Send, Sprout, Users, TrendingUp, Brain, Shield, Clock, MapPin, Droplets, Bug, Maximize2, Minimize2, Mic, Square, Loader2 } from 'lucide-react'
@@ -6,6 +8,7 @@ import { sendChat, sendLocalChat } from './lib/chat'
 import { fetchWeatherForClient } from './lib/weather'
 import { transcribeAudio } from './lib/speech'
 import FarmerInfoForm from './FarmerInfoForm'
+import ActivityTracker from './ActivityTracker.jsx';
 
 const MAX_RECORDING_SECONDS = 10
 const RECORDING_MIME_TYPE = 'audio/webm;codecs=opus'
@@ -124,6 +127,7 @@ function App() {
       chatNow: 'Chat Now',
       heroSubtitle: 'Kerala കർഷകർക്കായി വ്യക്തിഗതമാക്കിയ, സമയോചിതമായ കാർഷിക ഉപദേശം നൽകുന്ന ഡിജിറ്റൽ സുഹൃത്ത്',
       provideInfo: 'വിവരങ്ങൾ നൽകുക',
+      logActivity: 'പ്രവർത്തനം രേഖപ്പെടുത്തുക',
       ctaPrimary: 'കൃഷി യാത്ര ആരംഭിക്കൂ',
       ctaSecondary: 'കൂടുതലറിയുക',
   localChat: 'ലോക്കൽ ചാറ്റ്',
@@ -220,10 +224,12 @@ function App() {
       placeholder: 'How can I help?',
       error: 'Sorry, there was a server issue. Please try again later.',
       provideInfo: 'Provide Info',
+      logActivity: 'Log Activity',
     }
   }
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [isFarmerFormOpen, setIsFarmerFormOpen] = useState(false)
+  const [isActivityTrackerOpen, setIsActivityTrackerOpen] = useState(false) // New state
   const [isFullScreen, setIsFullScreen] = useState(false)
   const [chatMode, setChatMode] = useState('cloud')
   const defaultMessages = (lng) => ([{ id: 1, text: TEXTS[lng].greeting, sender: 'bot' }])
@@ -426,10 +432,11 @@ function App() {
       try { localStorage.setItem(getHistoryKey(chatMode), JSON.stringify(messages)) } catch {}
     }, [messages, chatMode])
 
-    // Lock body scroll when chat is open
+    // Lock body scroll when a modal is open
     useEffect(() => {
       const body = document.body
-      if (isChatOpen) {
+      const aModalIsOpen = isChatOpen || isFarmerFormOpen || isActivityTrackerOpen;
+      if (aModalIsOpen) {
         const prev = body.style.overflow
         body.dataset.prevOverflow = prev
         body.style.overflow = 'hidden'
@@ -439,7 +446,7 @@ function App() {
         }
       }
       return () => {}
-    }, [isChatOpen])
+    }, [isChatOpen, isFarmerFormOpen, isActivityTrackerOpen])
 
     useEffect(() => {
       let cancelled = false
@@ -636,15 +643,24 @@ function App() {
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="flex flex-col sm:flex-row gap-4 sm:gap-5 md:gap-6 justify-center"
+            className="flex flex-col sm:flex-row gap-4 sm:gap-5 md:gap-6 justify-center flex-wrap"
           >
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setIsFarmerFormOpen(true)}
-              className="text-green-700 px-7 py-4 rounded-full text-base md:text-lg font-semibold transition-all duration-300 cta-btn secondary-cta"
+              className="bg-green-600 hover:bg-green-700 text-white px-7 py-4 rounded-full text-base md:text-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl cta-btn primary-cta"
             >
               {TEXTS[lang].provideInfo}
+            </motion.button>
+            {/* New Button for Activity Tracker */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setIsActivityTrackerOpen(true)}
+              className="text-green-700 px-7 py-4 rounded-full text-base md:text-lg font-semibold transition-all duration-300 cta-btn secondary-cta"
+            >
+              {TEXTS[lang].logActivity}
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -826,9 +842,9 @@ function App() {
       ) : null}
     </div>
   </section>
-
+  
       {/* Footer */}
-  <footer className="bg-green-800 text-green-600 py-10 px-4 md:py-12 md:px-6">
+  <footer className="bg-green-800 text-green-600 py-10 px-4 md:py-12 md:px-6 mt-12">
         <div className="container mx-auto text-center">
           <motion.div 
             initial={{ opacity: 0, y: 50 }}
@@ -843,8 +859,6 @@ function App() {
           <p className="text-green-300 text-sm">{TEXTS[lang].footerNote}</p>
         </div>
       </footer>
-
-      
 
       {/* Chat Interface */}
       <AnimatePresence>
@@ -985,6 +999,11 @@ function App() {
 
       <AnimatePresence>
         {isFarmerFormOpen && <FarmerInfoForm isOpen={isFarmerFormOpen} onClose={() => setIsFarmerFormOpen(false)} language={lang} />}
+      </AnimatePresence>
+
+      {/* New Modal for Activity Tracker */}
+      <AnimatePresence>
+        {isActivityTrackerOpen && <ActivityTracker isOpen={isActivityTrackerOpen} onClose={() => setIsActivityTrackerOpen(false)} lang={lang} />}
       </AnimatePresence>
     </div>
   )
